@@ -1,0 +1,33 @@
+Package: spac3tools
+Type: Package
+Title: tools for spacial gen3sis input objects gen3sis.
+Version: 0.1.0
+Author: c(person("rf-gem3sis team", role=c("cph"), comment = "sfo Oskar Hagen"),
+          person("Oskar", "Hagen", email = "oskar@hagen.bio", role = c("aut", "cre"), comment = "Centre for Integrative Biodiversity Research (iDiv) Halle-Jena-Leipzig")
+          )
+Maintainer: The package maintainer <oskar@hagen.bio>
+Description: set of tools to create, converte, compress and decompress files
+containing spatial and temporal environmental data, stored as space.rds (rf-gen3sis) 
+or landscape.rds (gen3sis) input data. 
+This package supports input in the format of a gen3sis landscape.rds
+or a rf-gen3sis space.rds, converting in bouth directions with 'landscape_to_space'
+or 'space_to_landscape'. compressing and decompressing only works with
+gen3sis_space objects. Thus, gen3sis_space decompressed objects are ready to be
+simulated with gen3sis branch rf-gen3sis at TODO_LINKHERE_TO_REP. Note that if 
+you want to use a gen3sis_space object, you should remember to additionally, 
+use the convert function 'space_to_landscape' from spac3tools before using it as
+a gen3sis input landscape. 
+
+recreate gen3sis input space from previouly avaiable landscape
+    Use four spaces when indenting paragraphs within the Description.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports: gen3sis, measurements, raster
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    markdown,
+    rmarkdown,
+    formatR
+Config/testthat/edition: 3

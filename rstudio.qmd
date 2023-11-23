@@ -1,0 +1,38 @@
+---
+title: "Readme"
+format: html
+editor: visual
+---
+
+## spac3tools R-package
+
+![](inst/logo/spac3tools.gif){width="25%"}
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+This package can:
+
+1.  convert landscapes.rds (gen3sis) to space.rds (rf-gen3sis)
+
+2.  compress an gen3sis_space object, i.e. space.rds for optimal storage
+
+3.  create gen3sis_space objects and access utility functions for plotting and input creation
+
+4.  decompress a gen3sis_space prior to running a simulation
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
