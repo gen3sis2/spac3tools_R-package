@@ -7,8 +7,12 @@ The R package `spac3tools` contains a suite of landscape or space
  engine for eco-evolutionary simulations
  [`gen3sis`](https://github.com/project-gen3sis/R-package).
  
-## This package can
+This package can:
 
-- Convert `landscapes.rds` files to `space.rds` files.
-- Compress and decompress `space.rds` files.
-- Convert `scape.rds` to `landscape.rds` files (in case not fixed directly over gen3sis)
+1.  convert `landscapes.rds` (`gen3sis`) to `space.rds` (`gen3sis_rf`)
+
+2.  compress a `gen3sis_space` object, i.e. `space.rds` for optimal storage
+
+3.  create `gen3sis_space` objects and access utility functions for plotting and input creation
+
+4.  decompress a `gen3sis_space` object prior to running a simulation
