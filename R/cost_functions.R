@@ -30,6 +30,15 @@ gcf$XXHarderNA_dist_Km <- function(source, habitable_src, dest, habitable_dest){
     return(1/1000)
   }
 }
+
+gcf$X10NA_dist_Km <- function(source, habitable_src, dest, habitable_dest){
+  if (!all(habitable_src, habitable_dest)) {
+    return(10/1000)
+  } else {
+    return(1/1000)
+  }
+}
+
 gcf$PhysDiv_Water_Km <- function(source, habitable_src, dest, habitable_dest) {
   if (!all(habitable_src, habitable_dest)) {
     return(2/1000)

@@ -1,6 +1,8 @@
-#' Create empty gen3sis_space
+#' create empty gen3sis_spaces
 #'
-#' @param type string with type of gen3sis space. Accepted values are \code{check_space()$type}
+#' @param env named list of environmental variables in a with X,Y, and time-steps from
+#' the most recent of future time-step
+#' #' @param type string with type of gen3sis space. Accepted values are \code{check_space()$type}
 #' @param duration list containing information on temporal dimension list(from, to, by, unit)
 #' *from* is the oldest time-step; negative number if starting in the past, zero if starting in the present
 #' *to* CAN ONLY BE smaller than *from*, since *to* is the latest time
@@ -11,35 +13,61 @@
 #'      and goes until the future 300 kya at every 100 mil years.
 #' @param area list containing information on the 2D spacial dimension: list(total_area, n_sites, unit)
 #' *total_area* the covered area by the points
-#' unit is the time unit used. Accepted units are \code{check_space()$area}
-#' @param crs Coordinate Reference Systems, as string
-#' @param env Named list of environmental variables with X,Y, and time-steps from
-#' the most recent of future time-step
-#' @param cost_function List of cost_function(s) used
-#' @param geo_dynamic Boolean, default is TRUE, should only be false
-#' if cost_distances are the same, i.e. no geodynamic changes in the space
+#' Accepted units are square meter (m2) and square kilometer (km2) \code{check_space()$area}
+#' @param crs Coordinate Reference Systems, as string and PROJ.4 format. Default is,
+#' WGS 84 -- WGS84 - World Geodetic System 1984 crs="+proj=longlat +datum=WGS84 +no_defs"
+
+#' @param cost_function list of cost_function(s) used to calculate the cost distances between sites. 
+#' Depends on type and other methods used to calculate the cost distances.
+#' @param geo_dynamic boolean for if sites change location or disappear over time
+#' ,default is NULL and deduces from NA over time. If false, only one cost_distance is calculated and used
+#' i.e. whencost_distances are the same, i.e. no geodynamic changes in the space
+#' @param author string with the name of the author. Default is NULL which gives the system user name obtained from \code{Sys.info()["user"]}
+#' This is far from ideal, but it is better than nothing. Please fill this up and even consider leaving a contact information
+#' @param source string with the source of the data, ideally should contain a publication with DOI and a valid URL
+#' Default is list(env="missing", methods="missing")
+#' @param description list with "env" and "methods" containing information on the environmental data,
+#' methods used and other relevant information such as source to raw data. Default is list("missing"
+#' The "env" should describe the environmental data used, including it's units
 #'
-#' @return a gen3sis_space object
+#' @return an informal and empty gen3sis_space object
 #' @export
 #'
 #' @examples
-create_space <- function(type="raster",
+create_space <- function(env=list(NA),
+                         type="raster",
                          duration=list(from=NA, to=NA, by=NA, unit="Ma"),
                          area=list(total_area=NA, n_sites=NA, unit="km2"),
                          crs="+proj=longlat +datum=WGS84 +no_defs",
-                         env=list(NA),
                          cost_function=list(NA),
-                         geo_dynamic=TRUE){
+                         geo_dynamic=NULL,
+                         author=NULL,
+                         source="missing",
+                         description=list(env="missing", methods="missing")
+                         ){
   space <- list()
-  # see convert_units from measurements, i.e.conv_units ?
-  space[["type"]] <- type
-  space[["duration"]] <- duration
-  space[["area"]] <- area
-  space[["crs"]] <- crs
-  space[["env"]] <- env
-  space[["cost_function"]] <- cost_function
-  space[["geo_dynamic"]] <- geo_dynamic
-  class(space) <- "gen3sis_space"
+  space$"env" <- env
+  space$meta$"type" <- type
+  space$meta$"duration" <- duration
+  space$meta$"area" <- area
+  space$meta$"crs" <- crs
+  space$meta$"cost_function" <- cost_function
+  if(is.null(geo_dynamic)&!is.null(dim(env[[1]]))){
+    geo_dynamic <- any(unlist(lapply(env, function(x){
+      #  if all lines have either only NA or values though time, then it is not geodynamic
+      r <- any(apply(is.na(x[,-c(1,2)]), 1, all))
+      return(r)
+    })))
+  }
+  space$meta$"geo_dynamic" <- geo_dynamic
+  if (is.null(author)){
+    author <- Sys.info()["user"]
+    # remove attributes
+    attributes(author) <- NULL
+  }
+  space$meta$"author" <- author
+  space$meta$"source" <- source
+  space$meta$"description" <- description
   return(invisible(space))
 }
 
@@ -51,7 +79,7 @@ create_space <- function(type="raster",
 #'
 #' @return If a gen3sis_space object is provided, either a stop with printed error
 #' report or a pass statement.
-#' If gen3sis_space=NULL, this function returns lists of accepted values cathegories
+#' If gen3sis_space=NULL, this function returns lists of accepted values categories
 #' according to \code{check_space()}
 #' @export
 #'
@@ -60,8 +88,10 @@ check_space <- function(gen3sis_space=NULL){
 
   accepted <- list()
   accepted[["type"]] <- c("raster", "points", "h3")
-  accepted[["duration"]] <- measurements::conv_unit_options$duration
-  accepted[["area"]]<- measurements::conv_unit_options$area
+  dur_units <- c("day", "wk", "mon", "yr", "dec", "cen", "mil", "Ma")
+  accepted[["duration"]] <- dur_units[dur_units%in%measurements::conv_unit_options$duration]
+  area_units <- c("m2", "km2", "ha")
+  accepted[["area"]]<- area_units[area_units%in%measurements::conv_unit_options$area]
 
   if (is.null(gen3sis_space)){
     return(accepted)
@@ -70,14 +100,16 @@ check_space <- function(gen3sis_space=NULL){
   error_report <- NULL
   sp_ref <- create_space()
 
-  for (n_i in names(sp_ref)){
-    # n_i <- names(sp_ref)[5]
-    error_report <- check_names(reference=n_i, datags=gen3sis_space, error_report)
-    n_sub_e <- names(sp_ref[[n_i]])
+
+  error_report <- check_names(reference="env", datags=gen3sis_space, error_report)
+  for (n_i in names(sp_ref$meta)){
+    # n_i <- names(sp_ref$meta)[1]
+    error_report <- check_names(reference=n_i, datags=gen3sis_space$meta, error_report)
+    n_sub_e <- names(sp_ref$meta[[n_i]])
     if (length(n_sub_e)>1){
       for (s_i in n_sub_e){
         # s_i <- n_sub_e[1]
-        error_report <- check_names(reference=s_i, datags=gen3sis_space[[n_i]], error_report)
+        error_report <- check_names(reference=s_i, datags=gen3sis_space$meta[[n_i]], error_report)
       }
     }
   }
@@ -88,7 +120,7 @@ check_space <- function(gen3sis_space=NULL){
   return("gen3sis_space [OK]")
 }
 
-#' Title
+#' Check names of gen3sis_space
 #'
 #' @param reference string with the variable name to be tested, e.g. type, env
 #' @param datags list of which \code{names(datags) is contrastet to reference}
@@ -107,16 +139,17 @@ check_names <- function(reference, datags, error_report=NULL){
   } # end if var name is missing
 
   if (reference=="env"){ # check env
-    if (!is.list(datags[[reference]])){
+    if (!is.list(datags[[reference]])){ # if env is not a list
       error_report <- paste(
         error_report,
         (paste0("! >", reference, "< has to be a list of environmental variable(s)")),
         "\n")
     }
+    # check if NAs are the same
     mask_NAs <- lapply(datags$env, function(x){
       is.na(x[,!colnames(x)%in%c("x","y"), drop=FALSE])
     })
-    for (env_i in names(mask_NAs)[-1]){
+    for (env_i in names(mask_NAs)){
       # env_i <- names(mask_NAs)[2]
       if (!identical(mask_NAs[[1]], mask_NAs[[env_i]])){
 
@@ -127,7 +160,7 @@ check_names <- function(reference, datags, error_report=NULL){
           "\n")
       }
     } # end NA comparison loop
-  } else if (is.na(datags[[reference]])){ # if there is NA
+  } else if (any(is.na(datags[[reference]]))){ # if there is NA
     error_report <- paste(
       error_report,
       (paste0("! >", reference, "< can not be NA! please specify")),

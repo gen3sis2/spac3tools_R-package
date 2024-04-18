@@ -81,20 +81,20 @@ if (n_ts!=length(o_cd_fl)){
   error("Mismatch on number of time steps")
 }
 # Get parent cell indexes
-h3_0 <- get_res0()
+h3_0 <- h3jsr::get_res0()
 # Get points of h3_0 at desired resolution
-c1 <- get_children(h3_address = h3_0, res = rezz)
+c1 <- h3jsr::get_children(h3_address = h3_0, res = rezz)
 # Get hex axes
 h3c1 <- unlist(c1)
-p1 <- cell_to_point(h3_address = h3c1, simple = FALSE)
+p1 <- h3jsr::cell_to_point(h3_address = h3c1, simple = FALSE)
 poly1 <- cell_to_polygon(input= h3c1, simple=FALSE)
 # prepare variables
 all_pts <- o_gls_all[[1]][,c("x", "y")]
 # set as coordinates
 all_pts_sf <- st_as_sf(all_pts, coords = c("x","y"))
-st_crs(all_pts_sf) <- crs_wgs84 # set coordinates
+sf::st_crs(all_pts_sf) <- crs_wgs84 # set coordinates
 # make H3 simple
-h3rezz_pts <- as.data.frame(st_coordinates(p1$geometry))
+h3rezz_pts <- as.data.frame(st::st_coordinates(p1$geometry))
 cat("# cells is: ")
 (unlist(lapply(list("all_pts"=all_pts, "h3rezz_pts"=h3rezz_pts), nrow)))
 #####  run loop over each h3rezz point

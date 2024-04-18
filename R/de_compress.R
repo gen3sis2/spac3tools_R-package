@@ -13,7 +13,8 @@
 #'
 #' @param dir_input the input directory containing the gen3sis space.rds
 #' and ideally the METADATA.txt
-#' @param cost_function a constant function to be used Normaly
+#' @param cost_function the index of the cost function to be used and as provided
+#' at spaces.rds at meta$cost_function. Default is the first cost function.
 #' Default is the declared cost_functions list at cost_lists
 #' Note that different const_functions can be used and it's computation
 #' depends only on gen3sis::create_input_landscape function
@@ -29,9 +30,9 @@
 #' # example
 
 decompress_space <- function(dir_input=NULL,
-                             cost_function=gcfl$only_dist_Km,
+                             cost_function_index=1,
                              dir_output=NULL,
-                             remove_temp_rasters=TRUE
+                             remove_temp_rasters=FALSE
                              #, timestoMa=6 # TODO
                              # SOLVE TEMPORAL ISSUE WITH FILE STRUCTUR
                              # PROB WITH TEMPORAL AND spatial resolution
@@ -44,15 +45,15 @@ decompress_space <- function(dir_input=NULL,
 
   cat(paste0("Using output directory: [", dir_output, "]"))
 
-  space_file_loc <- file.path(dir_input,"landscapes.rds")
+  space_file_loc <- file.path(dir_input,"spaces.rds")
   if (file.exists(space_file_loc)){
-    print(paste0("[OK] landscapes.rds found: [", space_file_loc, "]"))
+    print(paste0("[OK] spaces.rds found: [", space_file_loc, "]"))
   } else{
-    stop(paste0("[MISSING] landscapes.rds was not found: [", space_file_loc, "]"))
+    stop(paste0("[MISSING] spaces.rds was not found: [", space_file_loc, "]"))
   }
 
   gen3sis_space=readRDS(space_file_loc)
-  ls <- gen3sis_space
+  ls <- gen3sis_space$env
 
   if (is.null(gen3sis_space)){
     error("Please provide a loaded gen3sis landscape.rds as gen3sis_space")
@@ -101,13 +102,14 @@ decompress_space <- function(dir_input=NULL,
   # TODO WHY ARE THE VALUES CHANGING BEFORE AND AFTER SAVING? Check this../. between lines 35 and 38!
   # myt <- (as.numeric(colnames(ls[[1]][-c(1,2)])))/timestoMa
   # string_time_step <- paste0(formatC(round(myt,2), width=5, flag="0", digits=2, format="f"),"Ma" )
-  create_input_landscape(landscapes = lsn, cost_function = cost_function, directions=8,
-                         output_directory = file.path(dir_output, basename(dir_input)), #timesteps = string_time_step,
-                         calculate_full_distance_matrices = T, crs=s_wgs84, verbose=T)
-
-  #updating the landscape.rds to avoid raster FUCK-UPS
-  saveRDS(ls, file.path(dir_output, basename(dir_input), "landscapes.rds"))
-  print(paste0("landscapes.rds moved to [", file.path(dir_output, "landscapes.rds"), "]"))
+  gsd <- gen3sis_space$duration
+  create_space_raster(raster_list = lsn, cost_function = gen3sis_space$meta$cost_function[cost_function_index], directions=8,
+                         output_directory = dir_output, timesteps = paste0(seq(gsd$from, gsd$to, gsd$by), gsd$unit),
+                         calculate_full_distance_matrices = T, crs=gen3sis_space$crs, verbose=T)
+  # TODO remove this line after create_input_landscape is fixed to create_space_raster
+  unlink(file.path(dir_output, "landscapes.rds"))
+  saveRDS(gen3sis_space, file.path(dir_output, basename(dir_input), "spaces.rds"))
+  print(paste0("spaces.rds moved to [", file.path(dir_output, "spaces.rds"), "]"))
 
   # remove temp raster in case remove_temp_rasters is TRUE
   if (remove_temp_rasters){
@@ -115,19 +117,19 @@ decompress_space <- function(dir_input=NULL,
     print(paste(dir_temp_raster, "removed sucessfully"))
   }
 
-  metadata_file_loc <- file.path(dir_input,"METADATA.txt")
-  if (file.exists(metadata_file_loc)){
-    print(paste0("[OK] METADATA.txt found! [", metadata_file_loc, "]"))
-    # update metadata.txt NOTE: This might demand manual changes
-    file.copy(metadata_file_loc,
-              file.path(dir_output, basename(dir_input), "METADATA.txt"),
-              overwrite=TRUE)
-    print("Metadata.tx moved. Please update METADATA.txt properly!")
-
-  } else {
-    warning(paste0("[MISSING] METADATA.txt is missing! \n Create METADATA.txt manually \n at [", metadata_file_loc, "]"))
-  }
-  return(paste0("Landscape decompressed sucessfully to [", file.path(dir_output, basename(dir_input)),"]" ))
+  # metadata_file_loc <- file.path(dir_input,"METADATA.txt")
+  # if (file.exists(metadata_file_loc)){
+  #   print(paste0("[OK] METADATA.txt found! [", metadata_file_loc, "]"))
+  #   # update metadata.txt NOTE: This might demand manual changes
+  #   file.copy(metadata_file_loc,
+  #             file.path(dir_output, basename(dir_input), "METADATA.txt"),
+  #             overwrite=TRUE)
+  #   print("Metadata.tx moved. Please update METADATA.txt properly!")
+  #
+  # } else {
+  #   warning(paste0("[MISSING] METADATA.txt is missing! \n Create METADATA.txt manually \n at [", metadata_file_loc, "]"))
+  # }
+  return(paste0("Space decompressed sucessfully to [", dir_output,"]" ))
 }
 
 
@@ -138,11 +140,10 @@ decompress_space <- function(dir_input=NULL,
 
 
 
-#' Title
+#' compress a gen3sis_space, by removing the cost distances
 #'
 #' @param dir_input
 #' @param dir_output
-#' @param cost_function
 #' @param remove_input
 #'
 #' @return
