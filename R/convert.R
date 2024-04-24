@@ -74,7 +74,9 @@ NULL
 #' @return
 #' @export
 #'
-#' @examples conv_landscape_to_space_help.R
+#' @examples
+#' # Refer to inst/examples/conv_landscape_to_space_help.R
+#' # TODO example
 landscape_to_space <- function(dir_input=NA,
                                dir_output=dir_input,
                                duration=list(from=NA, to=NA, by=NA, unit="Ma"),
