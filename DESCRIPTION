@@ -10,7 +10,7 @@ Description: set of tools to create, converte, compress and decompress files con
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Imports: gen3sis, measurements, raster, h3jsr, sf, geosphere, rgeos
+Imports: gen3sis, measurements, raster, h3jsr, sf, geosphere, rgeos, terra
 Suggests: 
     testthat (>= 3.0.0),
     knitr,

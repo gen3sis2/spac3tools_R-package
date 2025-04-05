@@ -7,7 +7,7 @@ It is recommended to use this on top of the smallest available raster resolution
 \usage{
 space_raster_to_h3(
   dir_input = "C:/temp/decompressed_spaces/world60by10at4d",
-  dir_output = file.path(dir_input, "h3"),
+  dir_output = file.path(dir_input, "h3_v2"),
   res = 0,
   verbose = 0,
   compute_distances = TRUE
@@ -26,4 +26,7 @@ space_raster_to_h3(
 \description{
 Convert a space.rds type raster to type h3
 It is recommended to use this on top of the smallest available raster resolution
+}
+\examples{
+conv_space_raster_to_h3_help.R
 }

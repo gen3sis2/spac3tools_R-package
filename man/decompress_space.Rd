@@ -12,8 +12,7 @@ decompress_space(
 )
 }
 \arguments{
-\item{dir_input}{the input directory containing the gen3sis space.rds
-and ideally the METADATA.txt}
+\item{dir_input}{the input directory containing the gen3sis space.rds}
 
 \item{dir_output}{output directory to save output. Default: dir_output=NULL
 is to creates a temporary directory and print it.}

@@ -15,7 +15,7 @@
 #' Additionally, the package provides several convenience functions to generate
 #' input data, configuration files and plots, as well as tutorials in the form
 #' of vignettes that illustrate how to declare models and run simulations.
-#' @seealso \code{\link{landscape_to_space}}   \code{\link{check_space}}  \code{\link{compress_space}}  \code{\link{decompress_space}}
+#' @seealso \code{\link{landscape_to_space}}   \code{\link{gen3sis2::check_spaces}}  \code{\link{compress_space}}  \code{\link{decompress_space}}
 #' @keywords programming IO iteration methods utilities
 #' @concept spacial tools for inputs used by gen3sis modeling eco-evolutionary
 #' macroevolution macroecology mechanisms or other flavours.
@@ -65,11 +65,10 @@ NULL
 #'
 #' @param dir_input Location of landscape.rds to be converted
 #' @param dir_output location to store the converted space.rds
-#' @param duration see \code{?create_space()}
-#' @param area.unit see \code{?create_space()} only unit necessary, rest is calculated.
-#' @param crs see \code{?create_space()}
-#' @param cost_function see \code{?create_space()} Default it a cost of 2 for sites with NA.
-#' @param ... see \code{?create_space(...)}
+#' @param duration see \code{?gen3sis2::create_spaces}
+#' @param crs see \code{?gen3sis2::create_spaces}
+#' @param cost_function see \code{?create_spaces} Default it a cost of 2 for sites with NA.
+#' @param ... see \code{?gen3sis2::create_spaces}
 #'
 #' @return
 #' @export
@@ -78,11 +77,10 @@ NULL
 landscape_to_space <- function(dir_input=NA,
                                dir_output=dir_input,
                                duration=list(from=NA, to=NA, by=NA, unit="Ma"),
-                               area.unit="km2",
                                crs="+proj=longlat +datum=WGS84 +no_defs",
-                               cost_function=list(xx=gcf$XXHarderNA_dist_Km),...){
+                               cost_function=list(xx=spac3tools::gcf$XXHarderNA_dist_Km),...){
 
-  prepare_dirs(dir_input, dir_output)
+  gen3sis2:::prepare_dirs(dir_input, dir_output)
   landscape_file_loc <- file.path(dir_input,"landscapes.rds")
   if (file.exists(landscape_file_loc)){
     print(paste0("[OK] landscapes.rds found: [", landscape_file_loc, "]"))
@@ -104,20 +102,22 @@ landscape_to_space <- function(dir_input=NA,
   # get dummy raster for area calculations
   ex_r <- terra::rast(lc[[1]][,1:3], type="xyz")
   terra::crs(ex_r) <- crs
-  total_area <- measurements::conv_unit(sum(area(ex_r)[]), "km2", area.unit)
-  n_sites <- ex_r@ncols*ex_r@nrows
-  gs <- create_space(env=lc,
+  total_area <- sum(terra::cellSize(ex_r)[]) # area is fix to Km2
+  # get number of rows
+  n_sites <- dim(ex_r)[1]
+  gs <- gen3sis2::create_spaces(env=lc,
                      type="raster",
                      duration=duration,
-                     area=list(extent=terra::ext(ex_r),
+                     area=list(extent=terra::ext(ex_r)[],
                                total_area=total_area,
                                n_sites=n_sites,
-                               unit=area.unit),
+                               unit="km2"),
                      cost_function = cost_function,
-                     geo_dynamic=TRUE,
+                     geodynamic=NULL,
+                     type_spec=list("res"=terra::res(ex_r)),
                      ...
                      )
-  check_space(gs)
+  gen3sis2::check_spaces(gs)
   saveRDS(gs, file.path(dir_output, "spaces.rds"), compress=T)
   print(paste0("space.rds type=", gs$type , " saved to [", file.path(dir_output, "spaces.rds"), "]"))
 }
@@ -133,8 +133,9 @@ landscape_to_space <- function(dir_input=NA,
 #'@compute_distances logical, if TRUE, the cost distances are computed and stored (default TRUE)
 #'@return
 #'@export
+#'@examples conv_space_raster_to_h3_help.R
 space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by10at4d",
-                               dir_output=file.path(dir_input, "h3"),
+                               dir_output=file.path(dir_input, "h3_v2"),
                                res=0,
                                verbose=0,
                                compute_distances=TRUE){
@@ -161,7 +162,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
   time_steps <- colnames(o_gls_all$env[[1]][-c(1,2)])
   n_ts <- length(time_steps)
 
-  if (n_ts!=length(o_cd_fl)){
+  if (o_gls_all$meta$geodynamic & n_ts!=length(o_cd_fl)){
     #stop function and show error message
     stop("Mismatch on number of time steps and full distances.rds")
   }
@@ -199,7 +200,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
   error_m <- c_r_index # store error distance in meters
   ## short initial loop to finds closest points... only do once
   for (h3pi in 1:np){ # loop for each point
-    # h3pi <- 12
+    # h3pi <- 1
     if (verbose>0){
       print(paste0("h3pi or h3 index of points is: ", h3pi, "/", np))
     }
@@ -220,7 +221,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
   }
   # prepare input variables...
   dummyM <- matrix(rep(NA, np*n_ts), ncol=n_ts)
-  rownames(dummyM) <- h3index#c_r_index # TODO USE h3c1 index later here#
+  rownames(dummyM) <- c_r_index # latest change
   colnames(dummyM) <- time_steps
   envs <- vector(mode = "list", length = length(o_gls_all$env))
   envs_names <- c(names(o_gls_all$env))
@@ -248,9 +249,15 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
 
 
     # load distances and manipulate it...
-    if (compute_distances){
+    # if geodynamic is true or geo is false and ti is 1
+    if (compute_distances & (o_gls_all$meta$geodynamic | (!o_gls_all$meta$geodynamic&ti==1))){
+      if (o_gls_all$meta$geodynamic){
+        tiis <- rev(o_cd_fl)[ti]
+      }else{
+        tiis <- "distances_full_0.rds"
+      }
       # lfd_ti = landscapes full distances at ti
-      lfd_ti <- readRDS(file.path(dir_input, "distances_full", rev(o_cd_fl)[ti])) # TODO FIX THE
+      lfd_ti <- readRDS(file.path(dir_input, "distances_full", tiis)) # TODO FIX THE
       print(paste("Loaded:", rev(o_cd_fl)[ti]))
       # sub select cost distances
       #ib <- colnames(lfd_ti)%in%c_r_index[lp1_m] # TODO USE h3c1 index later here too, do match#
@@ -258,18 +265,20 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
       # length(ib)
       new_cost_dist_full <- lfd_ti[c_r_index[lp1_m],c_r_index[lp1_m]]
       #dimnames(new_cost_dist_full) <- list(h3index[lp1_m], h3index[lp1_m])
-      h3_ii <- which(c_r_index%in%colnames(new_cost_dist_full))
-      dimnames(new_cost_dist_full) <- list(h3index[h3_ii], h3index[h3_ii])
+
+      # h3_ii <- which(c_r_index%in%colnames(new_cost_dist_full))
+      # dimnames(new_cost_dist_full) <- list(h3index[h3_ii], h3index[h3_ii])
+
       # save cost function ti
-      saveRDS(new_cost_dist_full, file.path(dir_output, "distances_full", rev(o_cd_fl)[ti]))
+      saveRDS(new_cost_dist_full, file.path(dir_output, "distances_full", tiis))
       if (verbose>0){
-        print(paste("Saved:", file.path(dir_output, "distances_full", rev(o_cd_fl)[ti])))
+        print(paste("Saved:", file.path(dir_output, "distances_full", tiis)))
       }
     }
     plot_stuff <- FALSE
     if (plot_stuff){
       #possible points
-      plot(terra::rast(o_gls_all$env[[1]][,1:3]), type="xyz")
+      terra::plot(terra::rast(o_gls_all$env[[1]][,1:3], type="xyz"))
       # points(all_pts, pch=2, col=rgb(1,1,1,1,1))
       points(h3rezz_pts[lp1_m, ], pch=3)
       # plot points in original raster
@@ -292,7 +301,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
                   vcex=1)
 
       # plot cost distance values with the original location...
-      if (compute_distances) {
+      # if (compute_distances) {
         # points(all_pts[colnames(new_cost_dist_full),], pch=3)
         # # plot cost distance location....
         # points(all_pts[colnames(lfd_ti),], pch=3)
@@ -321,12 +330,12 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
         #             vcol=1, # use 1 for all points
         #             cols=gen3sis::color_richness(5),
         #             vcex=1.5)
-      }
+      # }
     }
   } # END LOOP OVER TIME STEPS
   # save final landscape
   h3pts <- h3rezz_pts
-  rownames(h3pts) <- h3c1
+  #rownames(h3pts) <- h3c1
   colnames(h3pts) <- c("x", "y")
   final_envs <- lapply(envs, function(x){
     return(cbind(h3pts, x))
@@ -335,6 +344,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
   final_space <- o_gls_all
   final_space$env <- final_envs
   final_space$meta$type <- "h3"
+  final_space$meta$type_spec <- list("res"=res)
   final_space$meta$area$total_area <- sum(h3jsr::cell_area(h3c1, final_space$area$unit, simple=TRUE))
   final_space$meta$area$n_sites <- as.numeric(np)
   saveRDS(final_space, file.path(dir_output, "spaces.rds"))

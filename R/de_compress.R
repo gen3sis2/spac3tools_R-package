@@ -12,7 +12,6 @@
 #' decompress a compressed gen3sis_space
 #'
 #' @param dir_input the input directory containing the gen3sis space.rds
-#' and ideally the METADATA.txt
 #' @param cost_function the index of the cost function to be used and as provided
 #' at spaces.rds at meta$cost_function. Default is the first cost function.
 #' Default is the declared cost_functions list at cost_lists
@@ -75,40 +74,46 @@ decompress_space <- function(dir_input=NULL,
     # var_i <- names(ls)[1]
     rstack <- NULL
     for (c_i in 3:ncol(ls[[var_i]])){
-      rstack[[c_i-2]] <- rasterFromXYZ(ls[[var_i]][,c(1,2,c_i)])
+      # c_i <- 4
+      # rstack[[c_i-2]] <- raster::rasterFromXYZ(ls[[var_i]][,c(1,2,c_i)])
+      rstack[[c_i-2]] <- terra::rast(ls[[var_i]][,c(1,2,c_i)], type="xyz")
     }
-    rstack <- brick(rstack)
-    writeRaster(rstack, filename = file.path(dir_temp_raster, paste0(var_i, ".grd")), overwrite=TRUE)
+    rstack <- terra::rast(rstack)
+                #raster::brick(rstack)
+    terra::writeRaster(rstack, filename = file.path(dir_temp_raster, paste0(var_i, ".grd")), overwrite=TRUE)
   }
   print(paste("Temporary Raster Bricks Saved to: ", dir_temp_raster))
-
   # load raster bricks
-  #list all temp raster bricks
-  bf <- list.files(dir_temp_raster, pattern=".grd")
+  #list all temp raster bricks ending with .grd
+  #bf <- list.files(dir_temp_raster, pattern=".grd$")
+  bf <- paste0(names(ls), ".grd")
   print(paste("Raster Bricks are: ", paste(bf, collapse = "; ")))
   #load all temp raster bricks
+
   b <- NULL
   for (i in 1:length(bf)){
-    b[[i]] <- brick(file.path(dir_temp_raster, bf[i]))
+    #b[[i]] <- raster::brick(file.path(dir_temp_raster, bf[i]))
+    b[[i]] <- terra::rast(file.path(dir_temp_raster, bf[i]))
   }
   #prepare list
   lsn <- lapply(ls, function(x){x <- NULL})
   #attribute to list
   for (i in 1:length(lsn)){
-    for (il in 1:nlayers(b[[i]])) {
+    for (il in 1:dim(b[[i]])[3]) {
       lsn[[i]] <- c(lsn[[i]], b[[i]][[il]])
     }
   }
-  # TODO WHY ARE THE VALUES CHANGING BEFORE AND AFTER SAVING? Check this../. between lines 35 and 38!
-  # myt <- (as.numeric(colnames(ls[[1]][-c(1,2)])))/timestoMa
+    # myt <- (as.numeric(colnames(ls[[1]][-c(1,2)])))/timestoMa
   # string_time_step <- paste0(formatC(round(myt,2), width=5, flag="0", digits=2, format="f"),"Ma" )
-  gsd <- gen3sis_space$duration
-  create_space_raster(raster_list = lsn, cost_function = gen3sis_space$meta$cost_function[cost_function_index], directions=8,
-                         output_directory = dir_output, timesteps = paste0(seq(gsd$from, gsd$to, gsd$by), gsd$unit),
-                         calculate_full_distance_matrices = T, crs=gen3sis_space$crs, verbose=T)
+  gsd <- gen3sis_space$meta$duration
+  gen3sis2::create_spaces_raster(raster_list = lsn,
+                                 cost_function = gen3sis_space$meta$cost_function[[cost_function_index]],
+                                 directions=8, output_directory = file.path(dir_output,"decompressed"),
+                                 duration = gsd, gsd$unit, full_dists = T, geodynamic=gen3sis_space$meta$geodynamic,
+                                crs=gen3sis_space$meta$crs, verbose=T, overwrite_output = TRUE)
   # TODO remove this line after create_input_landscape is fixed to create_space_raster
   unlink(file.path(dir_output, "landscapes.rds"))
-  saveRDS(gen3sis_space, file.path(dir_output, basename(dir_input), "spaces.rds"))
+  saveRDS(gen3sis_space, file.path(dir_output, "spaces.rds"))
   print(paste0("spaces.rds moved to [", file.path(dir_output, "spaces.rds"), "]"))
 
   # remove temp raster in case remove_temp_rasters is TRUE
@@ -159,7 +164,7 @@ source("./R/cost_functions.R")
 compress_space <- function(dir_input=NULL,
                            dir_output=NULL){
 
-  prepare_dirs(dir_input, dir_output)
+  gen3sis2:::prepare_dirs(dir_input, dir_output)
 
 
   if (is.null(dir_output)){

@@ -10,9 +10,8 @@ landscape_to_space(
   dir_input = NA,
   dir_output = dir_input,
   duration = list(from = NA, to = NA, by = NA, unit = "Ma"),
-  area.unit = "km2",
   crs = "+proj=longlat +datum=WGS84 +no_defs",
-  cost_function = list(xx = gcf$XXHarderNA_dist_Km),
+  cost_function = list(xx = spac3tools::gcf$XXHarderNA_dist_Km),
   ...
 )
 }
@@ -21,15 +20,13 @@ landscape_to_space(
 
 \item{dir_output}{location to store the converted space.rds}
 
-\item{duration}{see \code{?create_space()}}
+\item{duration}{see \code{?gen3sis2::create_spaces}}
 
-\item{area.unit}{see \code{?create_space()} only unit necessary, rest is calculated.}
+\item{crs}{see \code{?gen3sis2::create_spaces}}
 
-\item{crs}{see \code{?create_space()}}
+\item{cost_function}{see \code{?create_spaces} Default it a cost of 2 for sites with NA.}
 
-\item{cost_function}{see \code{?create_space()} Default it a cost of 2 for sites with NA.}
-
-\item{...}{see \code{?create_space(...)}}
+\item{...}{see \code{?gen3sis2::create_spaces}}
 }
 \description{
 Create a space.rds object
