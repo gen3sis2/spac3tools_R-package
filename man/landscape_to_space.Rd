@@ -34,5 +34,6 @@ from a dir_input containing a landscape.rds
 to a a space.rds into the dir_output.
 }
 \examples{
-conv_landscape_to_space_help.R
+# Refer to inst/examples/conv_landscape_to_space_help.R
+# TODO example
 }

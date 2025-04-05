@@ -2,12 +2,16 @@
 % Please edit documentation in R/convert.R
 \docType{package}
 \name{spac3tools}
+\alias{spac3tools-package}
 \alias{spac3tools}
 \title{spac3tools: Tools for gen3sis input manipulation including conversion,
 compression and decompression. This package is meat to provide support for
 gen3sis previous and future generations, facilitating storage, modification
 and reproducibility
 General Engine for Eco-Evolutionary Simulations}
+\description{
+set of tools to create, converte, compress and decompress files containing spatial and temporal environmental data, stored as space.rds (rf-gen3sis) or landscape.rds (gen3sis) input data. This package supports input in the format of a gen3sis landscape.rds or a rf-gen3sis space.rds, converting in bouth directions with 'landscape_to_space' or 'space_to_landscape'. compressing and decompressing only works with gen3sis_space objects. Thus, gen3sis_space decompressed objects are ready to be simulated with gen3sis branch rf-gen3sis at TODO_LINKHERE_TO_REP. Note that if you want to use a gen3sis_space object, you should remember to additionally, use the convert function 'space_to_landscape' from spac3tools before using it as a gen3sis input landscape.
+}
 \details{
 Gen3sis is implemented in a mix of R and C++ code, and wrapped into
 an R-package. All high-level functions that the user may interact with are

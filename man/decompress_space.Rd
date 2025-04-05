@@ -33,6 +33,6 @@ passing confirmation statement
 decompress a compressed gen3sis_space
 }
 \examples{
-inst/examples/run_recreate_space.R
-# example
+# Refer to inst/examples/run_recreate_space.R
+# TODO example
 }

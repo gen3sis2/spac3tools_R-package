@@ -25,8 +25,9 @@
 #' @return passing confirmation statement
 #' @export
 #'
-#' @examples inst/examples/run_recreate_space.R
-#' # example
+#' @examples
+#' # Refer to inst/examples/run_recreate_space.R
+#' # TODO example
 
 decompress_space <- function(dir_input=NULL,
                              cost_function_index=1,
