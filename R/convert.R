@@ -1,18 +1,16 @@
 #' @title spac3tools: Tools for gen3sis input manipulation including conversion,
 #' compression and decompression.
-#' @name spac3tools
+
 #' @description spac3tools is a package that provides tools for manipulating
 #' gen3sis input data, including conversion of landscapes to spaces,
 #' compression and decompression of spaces, and conversion of spaces from raster
 #' to h3 format and much more.
 #' @references Development team
-#' @details This package is meat to provide support for
+#' @details This package is meant to provide support for
 #' gen3sis previous and future generations, facilitating storage, modification
 #' and reproducibility of the input data used in gen3sis and gen3sis2 simulations.
 #' @seealso \code{\link{landscape_to_space}}   \code{\link{gen3sis2::check_spaces}}  \code{\link{compress_space}}  \code{\link{decompress_space}}
-#' @keywords programming IO iteration methods utilities
-#' @concept spacial tools for inputs used by gen3sis modeling eco-evolutionary
-#' macroevolution macroecology mechanisms or other flavours.
+#' @concept spatial tools for inputs used by gen3sis2 eco-evolutionary modeling engine
 #' @examples
 #' \dontrun{
 #'
@@ -44,11 +42,11 @@
 #'
 #' }
 #' @keywords internal
-"_PACKAGE"
-#' @useDynLib gen3sis, .registration = TRUE
+#' @useDynLib spac3tools, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
 #' @import Matrix
-NULL
+#'
+"_PACKAGE"
 
 
 

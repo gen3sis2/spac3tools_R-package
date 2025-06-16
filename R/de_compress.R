@@ -9,7 +9,7 @@
 ##=======================================================================##
 
 
-#' Decompress a compressed gen3sis2 Space Object
+#' Decompress a compressed gen3sis2 space object
 #'
 #' This function takes a `spaces.rds` file (compressed gen3sis2 format), reconstructs the
 #' full costs distances, ready for simulation and saves it to the specified output directory.

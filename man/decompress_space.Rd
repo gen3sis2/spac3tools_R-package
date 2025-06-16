@@ -2,7 +2,7 @@
 % Please edit documentation in R/de_compress.R
 \name{decompress_space}
 \alias{decompress_space}
-\title{Decompress a compressed gen3sis2 Space Object}
+\title{Decompress a compressed gen3sis2 space object}
 \usage{
 decompress_space(
   dir_input = NULL,
