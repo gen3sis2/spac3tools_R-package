@@ -258,7 +258,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
     new_error <- c()
     #for (raster_idx in c_r_index) {
     for(raster_idx in names(inverted_list)){
-      print(raster_idx)
+      # print(raster_idx)
       raster_point <- all_pts[as.numeric(raster_idx),]
       distances <- geosphere::distGeo(raster_point, h3rezz_pts)
       min_dist <- min(distances)
