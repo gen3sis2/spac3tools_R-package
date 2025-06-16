@@ -213,7 +213,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
   #create numerical empty vector
   error_m <- c_r_index # store error distance in meters
   # create a dictionary for h3 index
-  cell_dict <- list()
+  h3IndexDictionary <- list()
   ## short initial loop to finds closest points... only do once
   for (h3pi in 1:np){ # loop for each point
     # h3pi <- 1
@@ -234,15 +234,15 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
 
     # store h3 index in dictionary
     h3_code <- unlist(h3_fill)[h3pi]
-    cell_dict[[h3_code]] <- closest_p_index
+    h3IndexDictionary[[h3_code]] <- closest_p_index
   }
 
   if(c_r_index |> duplicated() |> sum() != 0){
     cat("Resolving duplicated cells...")
 
     inverted_list <- list()
-    for (name in names(cell_dict)) {
-      h3_indexes <- cell_dict[[name]]
+    for (name in names(h3IndexDictionary)) {
+      h3_indexes <- h3IndexDictionary[[name]]
       if (is.null(inverted_list[[h3_indexes]])) {
         inverted_list[[h3_indexes]] <- c(name)
       } else {
