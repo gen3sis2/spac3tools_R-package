@@ -168,20 +168,32 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
     #stop function and show error message
     stop("Mismatch on number of time steps and full distances.rds")
   }
-  # Get parent cell indexes, as zero is the lowest possible resolution and
-  # allways a parent of the desired resolution
-  h3_0 <- h3jsr::get_res0()
-  # Get points of h3_0 at desired resolution
-  c1 <- h3jsr::get_children(h3_address = h3_0, res = res)
-  # Get hex axes
-  h3c1 <- unlist(c1)
-  p1 <- h3jsr::cell_to_point(h3_address = h3c1, simple = FALSE)
-  #poly1 <- cell_to_polygon(input= h3c1, simple=FALSE)
-  # prepare variables
   all_pts <- o_gls_all$env[[1]][,c("x", "y")]
   # set as coordinates
-  all_pts_sf <- sf::st_as_sf(all_pts, coords = c("x","y"))
-  sf::st_crs(all_pts_sf) <- o_gls_all$meta$crs # set coordinates
+  all_pts_sf <- sf::st_as_sf(all_pts, coords = c("x","y"), crs = o_gls_all$meta$crs)
+  all_pts_4326 <- sf::st_transform(all_pts_sf, 4326) # transform to 4326
+
+  # h3_fill: cells corresponding to a convex polygon around all points
+  h3_fill <- all_pts_4326 |>
+    sf::st_union() |>
+    sf::st_convex_hull() |>
+    h3jsr::polygon_to_cells(res=res)
+
+  h3_fill <- unlist(h3_fill) |>
+    h3jsr::get_disk(2) |>
+    unlist() |>
+    unique()
+
+  # h3_cell_idx: cells corresponding only to the points itself
+  h3_cell_idx <- h3jsr::point_to_cell(all_pts_4326, res = res)
+
+  # if (sum(duplicated(h3_cell_idx)) > 0){
+  #   warning("Consider increasing the resolution")
+  # }
+
+  # prepare variables
+  p1 <- h3jsr::cell_to_point(h3_address = unlist(h3_fill), simple = FALSE)
+
   # make H3 simple
   h3rezz_pts <- as.data.frame(sf::st_coordinates(p1$geometry))
   table_sites <- unlist(lapply(list("all_pts"=all_pts, "h3rezz_pts"=h3rezz_pts), nrow))
@@ -200,6 +212,8 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
   c_r_index <- rep(NA, np)
   #create numerical empty vector
   error_m <- c_r_index # store error distance in meters
+  # create a dictionary for h3 index
+  h3IndexDictionary <- list()
   ## short initial loop to finds closest points... only do once
   for (h3pi in 1:np){ # loop for each point
     # h3pi <- 1
@@ -213,17 +227,70 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
     if (length(closest_p_index)!=1){
       closest_p_index <- closest_p_index[1]
       # giver warning message
-      warning("Error: more than one point found")
+      warning("Attention: more than one point found")
     }
     c_r_index[h3pi] <- closest_p_index
     error_m[h3pi] <- m_dist
+
+    # store h3 index in dictionary
+    h3_code <- unlist(h3_fill)[h3pi]
+    h3IndexDictionary[[h3_code]] <- closest_p_index
   }
+
+  if(c_r_index |> duplicated() |> sum() != 0){
+    cat("Resolving duplicated cells...")
+
+    inverted_list <- list()
+    for (name in names(h3IndexDictionary)) {
+      h3_indexes <- h3IndexDictionary[[name]]
+      if (is.null(inverted_list[[h3_indexes]])) {
+        inverted_list[[h3_indexes]] <- c(name)
+      } else {
+        inverted_list[[h3_indexes]] <- c(inverted_list[[h3_indexes]], name)
+      }
+    }
+
+    for (forgotten_point in which(!(1:nrow(all_pts) %in% as.numeric(names(inverted_list))))){
+      inverted_list[[as.character(forgotten_point)]] <- NA
+    }
+
+    dist_resolved <- rep(NA, length(c_r_index))
+    new_error <- c()
+    #for (raster_idx in c_r_index) {
+    for(raster_idx in names(inverted_list)){
+      # print(raster_idx)
+      raster_point <- all_pts[as.numeric(raster_idx),]
+      distances <- geosphere::distGeo(raster_point, h3rezz_pts)
+      min_dist <- min(distances)
+      new_error <- c(new_error, min_dist)
+      closest_cell_idx <- which(distances == min_dist)
+
+      dist_resolved[closest_cell_idx] <- raster_idx
+    }
+
+    if((dist_resolved[!is.na(dist_resolved)] |> duplicated() |> sum() > 0)
+       || (length(dist_resolved[!is.na(dist_resolved)]) != nrow(all_pts))){
+      stop("Could not resolve duplicates. Try increasing the resolution.")
+    } else {
+      c_r_index <- dist_resolved
+      error_m <- new_error
+    }
+  }
+
+  #closest_raster_index <<- c_r_index # debug
   if (verbose>1){
     hist(error_m/1000, main="Error in Km")
   }
   # prepare input variables...
   dummyM <- matrix(rep(NA, np*n_ts), ncol=n_ts)
   rownames(dummyM) <- c_r_index # latest change
+  if(any(is.na(rownames(dummyM)))){
+    point_starter <- sum(!is.na(rownames(dummyM)))+1
+    for(i in which(is.na(row.names(dummyM)))){
+      rownames(dummyM)[i] <- as.character(point_starter)
+      point_starter <- point_starter + 1
+    }
+  }
   colnames(dummyM) <- time_steps
   envs <- vector(mode = "list", length = length(o_gls_all$env))
   envs_names <- c(names(o_gls_all$env))
@@ -304,34 +371,34 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
 
       # plot cost distance values with the original location...
       # if (compute_distances) {
-        # points(all_pts[colnames(new_cost_dist_full),], pch=3)
-        # # plot cost distance location....
-        # points(all_pts[colnames(lfd_ti),], pch=3)
-        #
-        # # plot random distances
-        #
-        # # plot only points with temperature and plot all points with distances on top...
-        # df <- all_pts[colnames(new_cost_dist_full),]
-        # plot_points(xy=h3rezz_pts,
-        #             vcol=envs$gtemp, # use 1 for all points
-        #             cols=gen3sis::color_richness(5),
-        #             vcex=1.5)
-        #
-        # #  plot(df, col=rainbow(800)) # :) have a nice day
-        #
-        # # select random points...
-        # points <- sample(colnames(new_cost_dist_full), 2)
-        # points(df, pch=3)
-        # segments(x0=df[points[1], "x"],y0=df[points[1], "y"],x1=df[points[2], "x"],y1=df[points[2], "y"])
-        # round(new_cost_dist_full[points[1],points[2]], 2)
-        # text(50, 50, )
-        #
-        #
-        # df <- all_pts[colnames(new_cost_dist_full),]
-        # plot_points(xy=df,
-        #             vcol=1, # use 1 for all points
-        #             cols=gen3sis::color_richness(5),
-        #             vcex=1.5)
+      # points(all_pts[colnames(new_cost_dist_full),], pch=3)
+      # # plot cost distance location....
+      # points(all_pts[colnames(lfd_ti),], pch=3)
+      #
+      # # plot random distances
+      #
+      # # plot only points with temperature and plot all points with distances on top...
+      # df <- all_pts[colnames(new_cost_dist_full),]
+      # plot_points(xy=h3rezz_pts,
+      #             vcol=envs$gtemp, # use 1 for all points
+      #             cols=gen3sis::color_richness(5),
+      #             vcex=1.5)
+      #
+      # #  plot(df, col=rainbow(800)) # :) have a nice day
+      #
+      # # select random points...
+      # points <- sample(colnames(new_cost_dist_full), 2)
+      # points(df, pch=3)
+      # segments(x0=df[points[1], "x"],y0=df[points[1], "y"],x1=df[points[2], "x"],y1=df[points[2], "y"])
+      # round(new_cost_dist_full[points[1],points[2]], 2)
+      # text(50, 50, )
+      #
+      #
+      # df <- all_pts[colnames(new_cost_dist_full),]
+      # plot_points(xy=df,
+      #             vcol=1, # use 1 for all points
+      #             cols=gen3sis::color_richness(5),
+      #             vcex=1.5)
       # }
     }
   } # END LOOP OVER TIME STEPS
@@ -340,6 +407,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
   #rownames(h3pts) <- h3c1
   colnames(h3pts) <- c("x", "y")
   final_envs <- lapply(envs, function(x){
+    #row.names(x) <- NULL # set rownames to h3c1 # debug
     return(cbind(h3pts, x))
   })
   # copy old landscape as ref.
@@ -347,7 +415,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
   final_space$env <- final_envs
   final_space$meta$type <- "h3"
   final_space$meta$type_spec <- list("res"=res)
-  final_space$meta$area$total_area <- sum(h3jsr::cell_area(h3c1, final_space$area$unit, simple=TRUE))
+  final_space$meta$area$total_area <- sum(h3jsr::cell_area(h3_fill, final_space$area$unit, simple=TRUE))
   final_space$meta$area$n_sites <- as.numeric(np)
   saveRDS(final_space, file.path(dir_output, "spaces.rds"))
   return(paste0("Space converted to h3 and saved to [", dir_output,"]" ))
