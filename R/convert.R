@@ -227,7 +227,7 @@ space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by1
     if (length(closest_p_index)!=1){
       closest_p_index <- closest_p_index[1]
       # giver warning message
-      warning("Error: more than one point found")
+      warning("Attention: more than one point found")
     }
     c_r_index[h3pi] <- closest_p_index
     error_m[h3pi] <- m_dist
