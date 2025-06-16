@@ -1,20 +1,11 @@
 #' @title spac3tools: Tools for gen3sis input manipulation including conversion,
-#' compression and decompression. This package is meat to provide support for
-#' gen3sis previous and future generations, facilitating storage, modification
-#' and reproducibility
-#' General Engine for Eco-Evolutionary Simulations
+#' compression and decompression.
 #' @name spac3tools
 #' @description
 #' @references Development team
-#' @details Gen3sis is implemented in a mix of R and C++ code, and wrapped into
-#' an R-package. All high-level functions that the user may interact with are
-#' written in R, and are documented via the standard R / Roxygen help files for
-#' R-packages.
-#' Runtime-critical functions are implemented in C++ and coupled to R via the
-#' Rcpp framework.
-#' Additionally, the package provides several convenience functions to generate
-#' input data, configuration files and plots, as well as tutorials in the form
-#' of vignettes that illustrate how to declare models and run simulations.
+#' @details This package is meat to provide support for
+#' gen3sis previous and future generations, facilitating storage, modification
+#' and reproducibility of the input data used in gen3sis and gen3sis2 simulations.
 #' @seealso \code{\link{landscape_to_space}}   \code{\link{gen3sis2::check_spaces}}  \code{\link{compress_space}}  \code{\link{decompress_space}}
 #' @keywords programming IO iteration methods utilities
 #' @concept spacial tools for inputs used by gen3sis modeling eco-evolutionary
@@ -59,15 +50,17 @@ NULL
 
 
 
-#' Create a space.rds object
-#' from a dir_input containing a landscape.rds
-#' to a a space.rds into the dir_output.
+#' Convert a gen3sis landscape to a gen3sis2 space object
+#'
+#' This function reads a `landscapes.rds` file (in gen3sis input format) from the specified input directory,
+#' converts it to a `spaces.rds` object compatible with gen3sis2, and saves the result in the output directory.
+#' It ensures that time steps are properly ordered and that spatial metadata is derived automatically.
 #'
 #' @param dir_input Location of landscape.rds to be converted
 #' @param dir_output location to store the converted space.rds
 #' @param duration see \code{?gen3sis2::create_spaces}
 #' @param crs see \code{?gen3sis2::create_spaces}
-#' @param cost_function see \code{?create_spaces} Default it a cost of 2 for sites with NA.
+#' @param cost_function Cost function for connectivity: see \code{?create_spaces}. Defaults to a cost of 2 for sites with missing data (NA).
 #' @param ... see \code{?gen3sis2::create_spaces}
 #'
 #' @return

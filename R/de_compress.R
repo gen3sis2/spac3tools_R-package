@@ -9,9 +9,13 @@
 ##=======================================================================##
 
 
-#' decompress a compressed gen3sis_space
+#' Decompress a compressed gen3sis2 Space Object
 #'
-#' @param dir_input the input directory containing the gen3sis space.rds
+#' This function takes a `spaces.rds` file (compressed gen3sis2 format), reconstructs the
+#' full costs distances, ready for simulation and saves it to the specified output directory.
+#' Useful for taking compressed environmental reconstructions and reproducing or reruning experiments
+#'
+#' @param dir_input the input directory containing the gen3sis2 space.rds
 #' @param cost_function the index of the cost function to be used and as provided
 #' at spaces.rds at meta$cost_function. Default is the first cost function.
 #' Default is the declared cost_functions list at cost_lists
@@ -146,17 +150,22 @@ decompress_space <- function(dir_input=NULL,
 
 
 
-#' compress a gen3sis_space, by removing the cost distances
+#' Compress a gen3sis2 Space object by removing cost distances
 #'
-#' @param dir_input
-#' @param dir_output
-#' @param remove_input
+#' This function removes large cost distance matrices from a `spaces.rds` file,
+#' creating a lighter version suitable for storage and distribution. All other
+#' metadata and environmental data are preserved.
 #'
-#' @return
+#' @param dir_input Directory containing the `spaces.rds` to compress.
+#' @param dir_output Directory where the compressed version will be saved.
+#' If `NULL`, a temporary directory is used.
+#'
+#' @return Saves a compressed `spaces.rds` file to `dir_output`. Does not return an R object.
 #' @export
 #'
 #' @examples
-#'
+#' # Example: compress_space("path/to/input", "path/to/output")
+#' # TODO: Add an executable example.
 #'
 #'
 #' # get gcf containing list of functions
