@@ -2,9 +2,7 @@
 % Please edit documentation in R/convert.R
 \name{landscape_to_space}
 \alias{landscape_to_space}
-\title{Create a space.rds object
-from a dir_input containing a landscape.rds
-to a a space.rds into the dir_output.}
+\title{Convert a gen3sis landscape to a gen3sis2 space object}
 \usage{
 landscape_to_space(
   dir_input = NA,
@@ -24,14 +22,17 @@ landscape_to_space(
 
 \item{crs}{see \code{?gen3sis2::create_spaces}}
 
-\item{cost_function}{see \code{?create_spaces} Default it a cost of 2 for sites with NA.}
+\item{cost_function}{Cost function for connectivity: see \code{?create_spaces}. Defaults to a cost of 2 for sites with missing data (NA).}
 
 \item{...}{see \code{?gen3sis2::create_spaces}}
 }
+\value{
+Saves a `spaces.rds` file in the specified output directory.
+}
 \description{
-Create a space.rds object
-from a dir_input containing a landscape.rds
-to a a space.rds into the dir_output.
+This function reads a `landscapes.rds` file (in gen3sis input format) from the specified input directory,
+converts it to a `spaces.rds` object compatible with gen3sis2, and saves the result in the output directory.
+It ensures that time steps are properly ordered and that spatial metadata is derived automatically.
 }
 \examples{
 # Refer to inst/examples/conv_landscape_to_space_help.R

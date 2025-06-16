@@ -22,6 +22,11 @@ space_raster_to_h3(
 `res` parameter of `hrjsr::get_children()`. For details refer to h3 documentation}
 
 \item{verbose}{integer, 0 for no messages, 1 for some messages, 2 for all messages}
+
+\item{compute_distances}{logical, if TRUE, the cost distances are computed and stored (default TRUE)}
+}
+\value{
+Saves a `spaces.rds` file in the specified output directory of type "h3".
 }
 \description{
 Convert a space.rds type raster to type h3

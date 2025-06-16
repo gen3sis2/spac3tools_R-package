@@ -2,7 +2,7 @@
 % Please edit documentation in R/de_compress.R
 \name{decompress_space}
 \alias{decompress_space}
-\title{decompress a compressed gen3sis_space}
+\title{Decompress a compressed gen3sis2 Space Object}
 \usage{
 decompress_space(
   dir_input = NULL,
@@ -12,7 +12,7 @@ decompress_space(
 )
 }
 \arguments{
-\item{dir_input}{the input directory containing the gen3sis space.rds}
+\item{dir_input}{the input directory containing the gen3sis2 space.rds}
 
 \item{dir_output}{output directory to save output. Default: dir_output=NULL
 is to creates a temporary directory and print it.}
@@ -30,7 +30,9 @@ depends only on gen3sis::create_input_landscape function}
 passing confirmation statement
 }
 \description{
-decompress a compressed gen3sis_space
+This function takes a `spaces.rds` file (compressed gen3sis2 format), reconstructs the
+full costs distances, ready for simulation and saves it to the specified output directory.
+Useful for taking compressed environmental reconstructions and reproducing or reruning experiments
 }
 \examples{
 # Refer to inst/examples/run_recreate_space.R

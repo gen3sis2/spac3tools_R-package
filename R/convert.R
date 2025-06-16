@@ -1,7 +1,10 @@
 #' @title spac3tools: Tools for gen3sis input manipulation including conversion,
 #' compression and decompression.
 #' @name spac3tools
-#' @description
+#' @description spac3tools is a package that provides tools for manipulating
+#' gen3sis input data, including conversion of landscapes to spaces,
+#' compression and decompression of spaces, and conversion of spaces from raster
+#' to h3 format and much more.
 #' @references Development team
 #' @details This package is meat to provide support for
 #' gen3sis previous and future generations, facilitating storage, modification
@@ -40,7 +43,8 @@
 #' plot_richness(species_t_150, landscape_t_150)
 #'
 #' }
-#' @docType package
+#' @keywords internal
+"_PACKAGE"
 #' @useDynLib gen3sis, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
 #' @import Matrix
@@ -63,7 +67,7 @@ NULL
 #' @param cost_function Cost function for connectivity: see \code{?create_spaces}. Defaults to a cost of 2 for sites with missing data (NA).
 #' @param ... see \code{?gen3sis2::create_spaces}
 #'
-#' @return
+#' @return Saves a `spaces.rds` file in the specified output directory.
 #' @export
 #'
 #' @examples
@@ -125,8 +129,8 @@ landscape_to_space <- function(dir_input=NA,
 #'@param res resolution of the h3 grid. This parameter is passed directly to the
 #' `res` parameter of `hrjsr::get_children()`. For details refer to h3 documentation
 #'@param verbose integer, 0 for no messages, 1 for some messages, 2 for all messages
-#'@compute_distances logical, if TRUE, the cost distances are computed and stored (default TRUE)
-#'@return
+#'@param compute_distances logical, if TRUE, the cost distances are computed and stored (default TRUE)
+#'@return Saves a `spaces.rds` file in the specified output directory of type "h3".
 #'@export
 #'@examples conv_space_raster_to_h3_help.R
 space_raster_to_h3 <- function(dir_input="C:/temp/decompressed_spaces/world60by10at4d",

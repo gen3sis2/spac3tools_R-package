@@ -155,7 +155,7 @@ decompress_space <- function(dir_input=NULL,
 #' This function removes large cost distance matrices from a `spaces.rds` file,
 #' creating a lighter version suitable for storage and distribution. All other
 #' metadata and environmental data are preserved.
-#'
+#' @name compress_space
 #' @param dir_input Directory containing the `spaces.rds` to compress.
 #' @param dir_output Directory where the compressed version will be saved.
 #' If `NULL`, a temporary directory is used.

@@ -5,23 +5,17 @@
 \alias{spac3tools-package}
 \alias{spac3tools}
 \title{spac3tools: Tools for gen3sis input manipulation including conversion,
-compression and decompression. This package is meat to provide support for
-gen3sis previous and future generations, facilitating storage, modification
-and reproducibility
-General Engine for Eco-Evolutionary Simulations}
+compression and decompression.}
 \description{
-set of tools to create, converte, compress and decompress files containing spatial and temporal environmental data, stored as space.rds (rf-gen3sis) or landscape.rds (gen3sis) input data. This package supports input in the format of a gen3sis landscape.rds or a rf-gen3sis space.rds, converting in bouth directions with 'landscape_to_space' or 'space_to_landscape'. compressing and decompressing only works with gen3sis_space objects. Thus, gen3sis_space decompressed objects are ready to be simulated with gen3sis branch rf-gen3sis at TODO_LINKHERE_TO_REP. Note that if you want to use a gen3sis_space object, you should remember to additionally, use the convert function 'space_to_landscape' from spac3tools before using it as a gen3sis input landscape.
+spac3tools is a package that provides tools for manipulating
+gen3sis input data, including conversion of landscapes to spaces,
+compression and decompression of spaces, and conversion of spaces from raster
+to h3 format and much more.
 }
 \details{
-Gen3sis is implemented in a mix of R and C++ code, and wrapped into
-an R-package. All high-level functions that the user may interact with are
-written in R, and are documented via the standard R / Roxygen help files for
-R-packages.
-Runtime-critical functions are implemented in C++ and coupled to R via the
-Rcpp framework.
-Additionally, the package provides several convenience functions to generate
-input data, configuration files and plots, as well as tutorials in the form
-of vignettes that illustrate how to declare models and run simulations.
+This package is meat to provide support for
+gen3sis previous and future generations, facilitating storage, modification
+and reproducibility of the input data used in gen3sis and gen3sis2 simulations.
 }
 \examples{
 \dontrun{
@@ -58,11 +52,12 @@ plot_richness(species_t_150, landscape_t_150)
 Development team
 }
 \seealso{
-\code{\link{landscape_to_space}}   \code{\link{check_space}}  \code{\link{compress_space}}  \code{\link{decompress_space}}
+\code{\link{landscape_to_space}}   \code{\link{gen3sis2::check_spaces}}  \code{\link{compress_space}}  \code{\link{decompress_space}}
 }
 \concept{spacial tools for inputs used by gen3sis modeling eco-evolutionary
 macroevolution macroecology mechanisms or other flavours.}
 \keyword{IO}
+\keyword{internal}
 \keyword{iteration}
 \keyword{methods}
 \keyword{programming}
