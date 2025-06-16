@@ -42,7 +42,6 @@
 #'
 #' }
 #' @keywords internal
-#' @useDynLib spac3tools, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
 #' @import Matrix
 #'
