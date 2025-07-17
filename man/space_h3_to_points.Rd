@@ -2,13 +2,42 @@
 % Please edit documentation in R/convert.R
 \name{space_h3_to_points}
 \alias{space_h3_to_points}
-\title{Do local conversion of a space.rds type h3 to type points Locally}
+\title{Do local conversion of a space.rds type h3 to type points locally or not}
 \usage{
-space_h3_to_points(dir_input)
+space_h3_to_points(dir_input, dir_output = NULL, inplace = TRUE)
 }
 \arguments{
-\item{dir_input}{Location of space.rds type h3 to be converted to points}
+\item{dir_input}{Location of spaces.rds type h3 to be converted to points}
+
+\item{dir_output}{Where to save the spaces.rds type points. Not necessary if inplace = TRUE. Default is NULL}
+
+\item{inplace}{logical. If TRUE, conversion is local, overwriting the input spaces.rds, if FALSE, a new directory is created and all files copied to it prior conversion. If FALSE, a dir_output must be provided. Default is TRUE}
 }
 \description{
-Do local conversion of a space.rds type h3 to type points Locally
+The function simply changes the type marker, leading \code{gen3sis2} to properly handle the spaces.rds
+}
+\examples{
+\donttest{
+library(spac3tools)
+# First load some raster spaces.rds input
+dir_input <- system.file("extdata/TestSpaces/geodynamic_spaces/h3", package = "gen3sis2")
+points_dir <- file.path(tempdir(),"points")
+dir.create(points_dir)
+
+file.copy(file.path(dir_input,"spaces.rds"), points_dir)
+
+spaces_h3 <- readRDS(file.path(points_dir,"spaces.rds"))
+
+# Input is of type "h3"
+print(spaces_h3$meta$type)
+
+# Conversion to points happens locally
+space_h3_to_points(dir_input = points_dir)
+
+spaces_points <- readRDS(file.path(points_dir,"spaces.rds"))
+
+# Now input is of type "points"
+print(spaces_points$meta$type)
+}
+
 }

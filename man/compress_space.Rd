@@ -18,9 +18,13 @@ creating a lighter version suitable for storage and distribution. All other
 metadata and environmental data are preserved.
 }
 \examples{
-# Example: compress_space("path/to/input", "path/to/output")
-# TODO: Add an executable example.
+\dontrun{
+library(spac3tools)
 
-
-# get gcf containing list of functions
+# The function compress a gen3sis2 spaces.rds
+compress_space(
+  dir_input = "your/spaces/directory", # the dir containing the spaces.rds
+  dir_output = "your/compressed_spaces/directory" # the dir to save the compressed spaces.rds
+)
+}
 }

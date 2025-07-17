@@ -4,7 +4,7 @@
 \name{spac3tools-package}
 \alias{spac3tools}
 \alias{spac3tools-package}
-\title{spac3tools: Tools for gen3sis input manipulation including conversion,
+\title{spac3tools: Tools for gen3sis2 input manipulation including conversion,
 compression and decompression.}
 \description{
 spac3tools is a package that provides tools for manipulating
@@ -14,7 +14,7 @@ to h3 format and much more.
 }
 \details{
 This package is meant to provide support for
-gen3sis previous and future generations, facilitating storage, modification
+gen3sis2 previous and future generations, facilitating storage, modification
 and reproducibility of the input data used in gen3sis and gen3sis2 simulations.
 }
 \examples{
@@ -52,7 +52,7 @@ plot_richness(species_t_150, landscape_t_150)
 Development team
 }
 \seealso{
-\code{\link{landscape_to_space}}   \code{\link{gen3sis2::check_spaces}}  \code{\link{compress_space}}  \code{\link{decompress_space}}
+\code{\link{landscape_to_space}}   \code{\link[gen3sis2]{check_spaces}}  \code{\link{compress_space}}  \code{\link{decompress_space}}
 }
 \concept{spatial tools for inputs used by gen3sis2 eco-evolutionary modeling engine}
 \keyword{internal}

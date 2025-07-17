@@ -18,7 +18,7 @@ landscape_to_space(dir_input,
                    dir_output=dir_gen2,
                    duration=list(from=-60, to=0,  by=10, unit="Ma"),
                    crs="+proj=longlat +datum=WGS84 +no_defs",
-                   cost_function=list(xx=spac3tools::gcf$XXHarderNA_dist_Km))
+                   cost_function=list(xx=gcf$XXHarderNA_dist_Km))
 
 #unlink(file.path(dir_gen2, "decompressed"))
 
@@ -62,7 +62,7 @@ landscape_to_space(dir_input_static,
                    dir_output=dir_gen2,
                    duration=list(from=-9, to=0,  by=1, unit="Xa"),
                    crs="+proj=longlat +datum=WGS84 +no_defs",
-                   cost_function=list(xx=spac3tools::gcf$XXHarderNA_dist_Km))
+                   cost_function=list(xx=gcf$XXHarderNA_dist_Km))
 
 #unlink(file.path(dir_gen2, "decompressed"))
 

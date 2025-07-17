@@ -1,0 +1,149 @@
+---
+title: "Converting gen3sis2 raster spaces to h3 and points"
+date: "`r format(Sys.time(),  '%d.%m.%Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Converting gen3sis2 raster spaces to h3 and points}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>", 
+  tidy=T,
+  fig.align='center',
+  tidy.opts = list(width.cutoff=80),
+  results='hold'
+)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In spatial and computational ecology, rasters represent the most common way to handle spatial data. Ecologists commonly use them with enviromental variables structured in multiple layers in a uniform square-cell grid, in which each cell contains an unique value for each layer (variable) and represent some area of Earth's surface. Since raster cells does not necessarly covers all the same surface area, rasters suffers greatly from projection distortions, what can be a major source of bias and uncertainty in eco-evolutionary studies. Adressing the distortion issue, many strategies were proposed. For example, H3 system partitions the Earth's surface in multiple hexagonal cells covering the same surface area; thus, information is less biased by projection distortion. Another possible strategy is the use of equidistant points in the planet surface, which also reduce projection bias.
+
+In *gen3sis2*, it is possible to create input spaces from rasters, using the *gen3sis2::create_space_raster* function. These spaces can be later converted to h3 and points using the functions *space_raster_to_h3* and *space_h3_to_raster*, from *spac3tools*. *gen3sis2* is completely compatible with both h3 and points input spaces. In this vignette we will demonstrate a raster spaces and its conversion to h3 and points spaces.  
+
+# Converting space
+
+First, we need to create a input space. To do that, we will use the temperature rasters of South America available at the [simulation repository](https://github.com/project-gen3sis/Simulations). Download it and define the correct path to it in order to continue. We first load the three corresponding raster from the hard drive.
+
+```{r, eval=FALSE, warning=FALSE}
+library(terra)
+
+temperature <- rast("~/your_path/SouthAmerica/temperature_rasters.grd")
+
+# set the right crs
+crs(temperature) <- "EPSG:4326"
+
+# organize in a raster list
+raster_list <- list(
+  temperature = temperature
+)
+```
+
+Now we can use this to create the input space with *gen3sis2::create_spaces_raster*. We will use a simple cost function. 
+
+```{r, eval=FALSE, echo=FALSE, warning=FALSE}
+library(gen3sis2)
+
+spaces_output <- "~/your_path/SouthAmerica/temp_spaces"
+gen3sis2::create_spaces_raster(
+  raster_list = raster_list,
+  cost_function = function(source, dest) {
+    if(!all(source$habitable, dest$habitable)) {
+      return(2/1000)
+    } else {
+      return(1/1000)
+    }
+  },
+  directions = 8,
+  output_directory = spaces_output,
+  full_dists = T,
+  overwrite_output = T,
+  verbose = F,
+  duration = list(from = 65, to = 0, by = -1, unit = "Ma"),
+  geodynamic = T
+)
+```
+
+```{r, echo=FALSE, include=FALSE, eval=FALSE}
+input_spaces <- "~/your_path/SouthAmerica/temp_spaces/"
+config_file <- "~/your_path/SouthAmerica/config/config_southamerica.R"
+output_dir <- "~/your_path/SouthAmerica/outputs/"
+
+emulate_space_in_simulation <- function(config, space, output_directory) {
+    directories <- gen3sis2::prepare_directories(config_file = config,
+                                       input_directory = space,
+                                       output_directory = output_directory)
+    config <- gen3sis2::create_input_config(config_file = config)
+    config[["directories"]] <- directories
+    val <- list("data" = list(),
+                "vars" = list(),
+                "config" = config)
+
+    val$config <- gen3sis2:::complete_config(val$config)
+    val$config$gen3sis$general$verbose <- 1
+    val <- gen3sis2:::setup_inputs(val$config, val$data, val$vars)
+    val <- gen3sis2:::setup_variables(val$config, val$data, val$vars)
+    val <- gen3sis2:::setup_landscape(val$config, val$data, val$vars)
+    return(val)
+}
+
+val <- emulate_space_in_simulation(config_file, input_spaces, output_dir)
+
+gen3sis2::plot_landscape(val$data$landscape)
+```
+
+## Converting raster spaces to H3
+
+To convert this raster space to H3 cells, we will use the *space_raster_to_h3* function. All we need is to specify the input and output directories, whether is wanted to compute the distances and the desired H3 resolution. The later is very important, because "resolution" meaning for rasters and H3 are not the same. For example, our raster space resolution is (1,1), or simply 1 degree. This means that each cell covers 1 longitudinal degree in x axis and 1 latitudinal degree in y axis. This information can be retrieved in the spaces.rds itself, in the *$meta$type_spec$res*. Here, *type_spec$res* can be read as "type specific resolution":
+
+```{r, eval=FALSE}
+raster_space <- readRDS(file.path(spaces_output,"spaces.rds"))
+raster_space$meta$type_spec$res
+```
+
+For H3 cells, resolution works differently. H3 works is an hierarchical system, and lower resolutions present cells that are "father" to others. E.g., each hexagon in resolution 0 contains 7 children hexagons of the resolution 1, and each of those have 7 children of the resolution 2, and so on...
+
+For that reason, when converting raster spaces to h3, the resolution is one important decision to take, and should be pondered.
+
+The conversion with *space_raster_to_h3* is very straightforward. The function projects the raster data in any H3 resolution. In the process, values aggregation (e.g., values mean) is often necessary. If "compute_distances" is TRUE, the original distance matrices are updated. If more than one raster cell is inside the same H3 cell, the closest raster cell to the H3 centroid is choosen as the representative. Then, the distance between two H3 cells is assumed as the distance calculated between their representative raster cells.
+
+```{r,eval=FALSE}
+library(spac3tools)
+
+h3_spaces_output <- "~/your_path/SouthAmerica/h3"
+
+space_raster_to_h3(dir_input = spaces_output,
+                   dir_output = h3_spaces_output,
+                   res=3,
+                   verbose=0,
+                   compute_distances=TRUE,
+                   reports=TRUE)
+```
+
+## Convert h3 spaces to points
+
+The conversion from type H3 to type Points is done simply changing the type marker in the spaces.rds, what allows *gen3sis2* to proper handle the spaces. It can be done locally ("inplace = TRUE"), overwriting the type H3 spaces.rds, or not ("inplace = FALSE"). If not locally, the function creates and copies all necessary file to a new directory (dir_output) prior conversion.
+
+```{r,eval=FALSE,warning=FALSE}
+# Conversion in a new directory
+points_spaces_output <- "~/your_path/SouthAmerica/points"
+space_h3_to_points(dir_input = h3_spaces_output,
+                   dir_output = points_spaces_output,
+                   inplace = FALSE)
+
+# Conversion is local
+space_h3_to_points(dir_input = h3_spaces_output)
+```
+
+# Conclusion
+
+This vignette showed how to convert spaces type raster into type H3 and points  using *spac3tools*. These conversions reduce spatial distortions common in raster grids, offering more consistent and scalable spatial structures for *gen3sis2* simulations. With support for multiple formats, users can choose the most suitable space type for their modelling needs.

@@ -2,15 +2,16 @@
 % Please edit documentation in R/convert.R
 \name{space_raster_to_h3}
 \alias{space_raster_to_h3}
-\title{Convert a space.rds type raster to type h3
-It is recommended to use this on top of the smallest available raster resolution}
+\title{Convert a space.rds type raster to type h3}
 \usage{
 space_raster_to_h3(
-  dir_input = "C:/temp/decompressed_spaces/world60by10at4d",
+  dir_input,
   dir_output = file.path(dir_input, "h3_v2"),
   res = 0,
   verbose = 0,
-  compute_distances = TRUE
+  compute_distances = TRUE,
+  agg_fun = mean,
+  reports = FALSE
 )
 }
 \arguments{
@@ -24,14 +25,56 @@ space_raster_to_h3(
 \item{verbose}{integer, 0 for no messages, 1 for some messages, 2 for all messages}
 
 \item{compute_distances}{logical, if TRUE, the cost distances are computed and stored (default TRUE)}
+
+\item{agg_fun}{function. An aggregation function to resume raster values in a single H3 cell
+when necessary. Examples include:
+\itemize{
+ \item \code{mean} - mean of all values (default)
+ \item \code{median} - median of all values
+ \item \code{min} or \code{max} - minimum or maximum value
+ \item \code{summary} - summary statistics including min, max, mean, media, and quartiles
+}}
+
+\item{reports}{logical. Default is FALSE. If TRUE, saves four files:
+\itemize{
+ \item envs_raster.rds - the original enviromental variables in raster spaces
+ \item raster_h3_dictionary.txt - a data.frame containing H3 cells and the indexes of raster cells resumed in it
+ \item representative_cells.txt - a data.frame containing H3 cells and the index of the chosen representative raster cell
+ \item conversion_error.txt - a data.frame containing the centroids for each raster and its respective H3 cell and the distance between them
+}}
 }
 \value{
 Saves a `spaces.rds` file in the specified output directory of type "h3".
 }
 \description{
-Convert a space.rds type raster to type h3
-It is recommended to use this on top of the smallest available raster resolution
+The function projects the raster data in any H3 resolution. In the process, values aggregation (e.g., values mean) is often necessary.
+The original distance matrices are updated. If more than one raster cell is inside the same H3 cell, the closest raster cell to the H3 centroid is choosen as the representative.
+The distance between two H3 cells is assumed as the distance calculated between their representative raster cells.
+It is recommended to use this on top of the smallest available raster resolution.
 }
 \examples{
-conv_space_raster_to_h3_help.R
+library(spac3tools)
+\donttest{
+# First load some raster spaces.rds input
+dir_input <- system.file("extdata/TestSpaces/geodynamic_spaces/raster", package = "gen3sis2")
+dir_output <- file.path(tempdir(), "h3")
+
+raster_spaces <- readRDS(file.path(dir_input,"spaces.rds"))
+
+# Input is of type "raster"
+print(raster_spaces$meta$type)
+
+# Convert it to h3 choosing appropriate h3 resolution (not the same as raster resolution)
+space_raster_to_h3(dir_input = dir_input,
+                   dir_output = dir_output,
+                   res=2,
+                   verbose=0,
+                   compute_distances=TRUE)
+
+h3_spaces <- readRDS(file.path(dir_output,"spaces.rds"))
+
+# Now input is of type "h3"
+print(h3_spaces$meta$type)
+}
+
 }
