@@ -40,7 +40,7 @@ landscape_to_space(
 # Loading the converted spaces.rds
 new_spaces <- readRDS(file.path(spaces_path, "spaces.rds"))
 
-# The new spaces.rds from gen3sis2 is very different, containg more information
+# The new spaces.rds from gen3sis2 is very different, containing more information
 names(new_spaces)
 names(new_spaces$env)
 names(new_spaces$meta)
