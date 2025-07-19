@@ -497,7 +497,7 @@ space_h3_to_points <- function(dir_input, dir_output=NULL, inplace = TRUE){
         dir.create(dir_target, recursive = TRUE)
       }
 
-      # Copia o arquivo
+      # Copy the file
       file.copy(from = file.path(dir_input, f),
                 to   = file.path(dir_output, f),
                 overwrite = TRUE)
