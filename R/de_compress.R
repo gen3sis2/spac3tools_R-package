@@ -16,7 +16,7 @@
 #' Useful for taking compressed environmental reconstructions and reproducing or reruning experiments
 #'
 #' @param dir_input the input directory containing the gen3sis2 space.rds
-#' @param cost_function the index of the cost function to be used and as provided
+#' @param cost_function_index the index of the cost function to be used and as provided
 #' at spaces.rds at meta$cost_function. Default is the first cost function.
 #' Default is the declared cost_functions list at cost_lists
 #' Note that different const_functions can be used and it's computation
@@ -29,9 +29,7 @@
 #' @return passing confirmation statement
 #' @export
 #'
-#' @examples
-#' # Refer to inst/examples/run_recreate_space.R
-#' # TODO example
+#' @example inst/examples/decompress_space_help.R
 
 decompress_space <- function(dir_input=NULL,
                              cost_function_index=1,
@@ -43,7 +41,7 @@ decompress_space <- function(dir_input=NULL,
 ){
 
   if (is.null(dir_output)){
-    # error("Please provide an output directory for the recreated landscape")
+    stop("Please provide an output directory for the recreated landscape")
     dir_output <- tempdir()
   }
 
@@ -60,7 +58,7 @@ decompress_space <- function(dir_input=NULL,
   ls <- gen3sis_space$env
 
   if (is.null(gen3sis_space)){
-    error("Please provide a loaded gen3sis landscape.rds as gen3sis_space")
+    stop("Please provide a loaded gen3sis landscape.rds as gen3sis_space")
   }
 
   # create temp dir
@@ -149,7 +147,7 @@ decompress_space <- function(dir_input=NULL,
 
 
 
-
+# TODO add an executable example
 #' Compress a gen3sis2 Space object by removing cost distances
 #'
 #' This function removes large cost distance matrices from a `spaces.rds` file,
@@ -163,13 +161,38 @@ decompress_space <- function(dir_input=NULL,
 #' @return Saves a compressed `spaces.rds` file to `dir_output`. Does not return an R object.
 #' @export
 #'
-#' @examples
-#' # Example: compress_space("path/to/input", "path/to/output")
-#' # TODO: Add an executable example.
-#'
-#'
-#' # get gcf containing list of functions
+#' @example inst/examples/compress_space_help.R
 source("./R/cost_functions.R")
+
+# depracated: refers to landscapes.rds from gen3sis
+# compress_space <- function(dir_input=NULL,
+#                            dir_output=NULL){
+#
+#   gen3sis2:::prepare_dirs(dir_input, dir_output)
+#
+#
+#   if (is.null(dir_output)){
+#     # error("Please provide an output directory for the recreated landscape")
+#     dir_output <- tempdir()
+#   }
+#
+#   cat(paste0("Using output directory: [", dir_output, "]"))
+#
+#   space_file_loc <- file.path(dir_input,"landscapes.rds")
+#   if (file.exists(space_file_loc)){
+#     print(paste0("[OK] landscapes.rds found: [", space_file_loc, "]"))
+#   } else{
+#     stop(paste0("[MISSING] landscapes.rds was not found: [", space_file_loc, "]"))
+#   }
+#
+#   gen3sis_space=readRDS(space_file_loc)
+#
+#   if (is.null(gen3sis_space)){
+#     stop("Please provide a loaded gen3sis landscapes.rds as gen3sis_space")
+#   }
+#   saveRDS(gen3sis_space, file.path(dir_output, "landscapes.rds"), compress=T)
+#
+# } #, timestoMa=6
 
 compress_space <- function(dir_input=NULL,
                            dir_output=NULL){
@@ -184,18 +207,18 @@ compress_space <- function(dir_input=NULL,
 
   cat(paste0("Using output directory: [", dir_output, "]"))
 
-  space_file_loc <- file.path(dir_input,"landscapes.rds")
+  space_file_loc <- file.path(dir_input,"spaces.rds")
   if (file.exists(space_file_loc)){
-    print(paste0("[OK] landscapes.rds found: [", space_file_loc, "]"))
+    print(paste0("[OK] spaces.rds found: [", space_file_loc, "]"))
   } else{
-    stop(paste0("[MISSING] landscapes.rds was not found: [", space_file_loc, "]"))
+    stop(paste0("[MISSING] spaces.rds was not found: [", space_file_loc, "]"))
   }
 
   gen3sis_space=readRDS(space_file_loc)
 
   if (is.null(gen3sis_space)){
-    error("Please provide a loaded gen3sis landscapes.rds as gen3sis_space")
+    stop("Please provide a loaded gen3sis2 spaces.rds as gen3sis_space")
   }
-  saveRDS(gen3sis_space, file.path(dir_output, "landscapes.rds"), compress=T)
+  saveRDS(gen3sis_space, file.path(dir_output, "spaces.rds"), compress=T)
 
 } #, timestoMa=6

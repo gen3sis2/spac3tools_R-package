@@ -1,21 +1,23 @@
 Package: spac3tools
 Type: Package
-Title: tools for gen3sis2 spatial input objects (i.e. spaces), including conversion from gen3sis landscapes, compression and decompression.
+Title: tools for gen3sis2 spatial input objects (i.e. spaces), including conversion from gen3sis landscapes, compression and decompression
 Version: 0.1.0
 Author: c(person("rf-gem3sis team", role=c("cph"), comment = "sfo Oskar Hagen"),
           person("Oskar", "Hagen", email = "oskar@hagen.bio", role = c("aut", "cre"), comment = "Centre for Integrative Biodiversity Research (iDiv) Halle-Jena-Leipzig")
           )
 Maintainer: The package maintainer <oskar@hagen.bio>
 Description: set of tools to create, converte, compress and decompress files containing spatial and temporal environmental data, stored as space.rds (gen3sis2) or landscape.rds (gen3sis) input data. This package supports input in the format of a gen3sis landscape.rds or a gen3sis2 space.rds, converting in bouth directions with 'landscape_to_space' or 'space_to_landscape'. compressing and decompressing only works with gen3sis_space objects. Thus, gen3sis_space decompressed objects are ready to be simulated with gen3sis branch gen3sis2 at TODO_LINKHERE_TO_REP. Note that if you want to use a gen3sis_space object, you should remember to additionally, use the convert function 'space_to_landscape' from spac3tools before using it as a gen3sis input landscape.
-License: GPL-3
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Imports: gen3sis, measurements, raster, h3jsr, sf, geosphere, rgeos, terra
+Imports: gen3sis2, h3jsr, sf, geosphere, terra, Matrix, Rcpp
 Suggests: 
     testthat (>= 3.0.0),
     knitr,
     markdown,
     rmarkdown,
-    formatR
+    formatR,
+    withr
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 RoxygenNote: 7.3.2

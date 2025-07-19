@@ -16,3 +16,11 @@ This package can:
 3.  create `gen3sis_spaces` object and access utility functions for plotting and input creation
 
 4.  decompress a spaces.rds (creates distances) prior to running a simulation
+
+  <!-- badges: start -->
+  [![R-CMD-check](https://github.com/ohagen/spac3tools/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ohagen/spac3tools/actions/workflows/R-CMD-check.yaml)
+  <!-- badges: end -->
+  
+  <!-- badges: start -->
+  [![R-CMD-check](https://github.com/ohagen/spac3tools/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ohagen/spac3tools/actions/workflows/R-CMD-check.yaml)
+  <!-- badges: end -->

@@ -1,0 +1,107 @@
+---
+title: "Compressing and decompressing gen3sis2 spaces"
+date: "`r format(Sys.time(),  '%d.%m.%Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Compressing and decompressing gen3sis2 spaces}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>", 
+  tidy=T,
+  fig.align='center',
+  tidy.opts = list(width.cutoff=80),
+  results='hold'
+)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Creating *gen3sis2* input spaces from a raster list with environmental conditions is easily done with *gen3sis2::create_spaces_raster*. However, due to distance matrix calculations, the size of the generated file set increases with the number of timesteps and the raster size. Thus, a geodynamic space with large extent, numerous timesteps, and higher resolutions can produce large file sets, easily surpassing 1 Gb. Although this is not much for local storage, multiple files are also created in multiple directories, containing the distance matrices for each timestep, if the space is geodynamic.
+
+The number of files created and their sizes can make it difficult to share spaces for large experiments. Since *gen3sis2* is built upon open-science and reproducibility principles, this is a problem for the gen3sis community. To overcome this, *spac3tools* features the functions *compress_space*, which compresses the *gen3sis2* spaces.rds file, and *decompress_space*, which reconstructs the original space. In this vignette, we will explore a full workflow, from space construction to its compression and decompression.
+
+# Compressing a space
+
+First, we need to create a input space. To do that, we will use the temperature, aridity and area rasters of South America available at the [simulation repository](https://github.com/project-gen3sis/Simulations). Download these and define the correct path to it in order to continue. We first load the three corresponding raster from the hard drive.
+
+```{r, eval=FALSE}
+library(terra)
+
+area <- rast("~/your_path/simulations/input_rasters/SouthAmerica/area_rasters.grd")
+aridity <- rast("~/your_path/simulations/input_rasters/SouthAmerica/aridity_rasters.grd")
+temperature <- rast("~/your_path/simulations/input_rasters/SouthAmerica/temperature_rasters.grd")
+
+# set the right crs
+crs(temperature) <- crs(area) <- crs(aridity) <- "EPSG:4326"
+
+# organize in a raster list
+raster_list <- list(
+  temperature = temperature,
+  aridity = aridity,
+  area = area
+)
+```
+
+Now we can use this to create the input space with *gen3sis2::create_spaces_raster*. We will use a simple cost function. 
+
+```{r, eval=FALSE}
+library(gen3sis2)
+
+gen3sis2::create_spaces_raster(
+  raster_list = raster_list,
+  cost_function = function(source, dest) {
+    if(!all(source$habitable, dest$habitable)) {
+      return(2/1000)
+    } else {
+      return(1/1000)
+    }
+  },
+  directions = 8,
+  output_directory = "~/your_path/SouthAmerica/new_spaces",
+  full_dists = T,
+  overwrite_output = T,
+  verbose = F,
+  duration = list(from = 65, to = 0, by = -1, unit = "Ma"),
+  geodynamic = T
+)
+```
+
+In disk, the output files size is ~450 Mb, including one "spaces.rds" file and 132 distance matrices files. This configuration can be difficult to share in publications and repositories. For that reason, we can use *compress_space* to remove all distance matrices files and resume much information in the "spaces.rds" file. This process is very straightforward, only requiring user to point input (where the spaces.rds is) and output (where to save the compressed spaces.rds) directories:
+
+```{r, eval=FALSE}
+compress_space(
+  dir_input = "~/your_path/SouthAmerica/new_spaces",
+  dir_output = "~/your_path/SouthAmerica/compressed"
+)
+```
+
+In our example, this creates a single spaces.rds file with size ~800 Kb, which is much more convenient to store and share.
+
+# Decompressing a space
+
+Using *spac3tools*, decompressing *gen3sis2* spaces is as easy as compressing it, and it is done with the *decompress_space* function. This function reconstructs the original raster list from the spaces.rds and recalculates the distance matrices. In this example, let's decompress the file we compressed before. Again, the user needs to specify input (where the compressed file is) and output (where to save the decompressed files) directories. The "cost_function_index" argument specifies which cost function stored in the compressed spaces.rds to use in the spaces reconstruction. The default is 1, and this value should be used if the spaces.rds has only one cost function. In the reconstruction process, the original rasters are recreated, and the user can choose whether to keep them with the "remove_temp_rasters" argument.
+
+```{r, eval=FALSE}
+decompress_space(
+  dir_input="~/your_path/SouthAmerica/compressed",
+  dir_output="~/your_path/SouthAmerica/decompressed",
+  cost_function_index=1,
+  remove_temp_rasters=FALSE
+)
+```
+
+This code recreates the original, pre-compression, space files (~450 Mb), making it suitable to run a *gen3sis2* simulation.
+
+# Conclusion
+
+This vignette demonstrated a complete workflow for managing the size and shareability of *gen3sis2* spaces, a critical aspect for large-scale ecological and evolutionary simulations. The *spac3tools* package directly addresses this challenge by providing *compress_space* and *decompress_space* functions. These tools offer a robust solution to significantly reduce the storage footprint of spaces, transforming hundreds of megabytes (or even gigabytes) across multiple files into a single, compact spaces.rds file. This dramatic reduction in size makes sharing these valuable research assets for publications, repositories, and collaborative projects far more practical and efficient.

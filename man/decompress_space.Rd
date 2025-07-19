@@ -14,17 +14,17 @@ decompress_space(
 \arguments{
 \item{dir_input}{the input directory containing the gen3sis2 space.rds}
 
+\item{cost_function_index}{the index of the cost function to be used and as provided
+at spaces.rds at meta$cost_function. Default is the first cost function.
+Default is the declared cost_functions list at cost_lists
+Note that different const_functions can be used and it's computation
+depends only on gen3sis::create_input_landscape function}
+
 \item{dir_output}{output directory to save output. Default: dir_output=NULL
 is to creates a temporary directory and print it.}
 
 \item{remove_temp_rasters}{boolean. If FALSE, delete temporary folder and files,
 i.e. temporary raster brinks inside directory temp_rasters}
-
-\item{cost_function}{the index of the cost function to be used and as provided
-at spaces.rds at meta$cost_function. Default is the first cost function.
-Default is the declared cost_functions list at cost_lists
-Note that different const_functions can be used and it's computation
-depends only on gen3sis::create_input_landscape function}
 }
 \value{
 passing confirmation statement
@@ -35,6 +35,15 @@ full costs distances, ready for simulation and saves it to the specified output 
 Useful for taking compressed environmental reconstructions and reproducing or reruning experiments
 }
 \examples{
-# Refer to inst/examples/run_recreate_space.R
-# TODO example
+\dontrun{
+library(spac3tools)
+
+# The function reconstruct the distance matrices and rasters from the compressed spaces.rds
+decompress_space(
+  dir_input="your/compressed_spaces/directory", # just the directory, not the path to compressed spaces.rds
+  dir_output="your/decompressed_spaces/directory",
+  cost_function_index=1, # which cost function to use
+  remove_temp_rasters=FALSE # remove the reconstructed raster or not
+)
+}
 }
