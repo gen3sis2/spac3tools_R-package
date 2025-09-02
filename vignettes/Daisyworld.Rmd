@@ -1,0 +1,336 @@
+---
+title: "Create H3 level 0 space and compute distance matrix"
+date: "`r format(Sys.time(),  '%d.%m.%Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{H3 level 0 space and distances}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>", 
+  tidy=TRUE,
+  fig.align='center',
+  results='hold'
+)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Goal
+
+This short vignette demonstrates how to build a very small `h3`-type `spaces.rds` object at H3 resolution 0, synthesize two environmental layers (`radiation` and `mean_temp`) that follow a longitudinal gradient, compute a pairwise distance matrix (in km), and save the artifacts in a layout compatible with the package tooling.
+
+## Build H3 level 0 grid, env data and space object
+
+```{r create-h3-space}
+# Load required packages
+library(h3jsr)
+library(sf)
+library(geosphere)
+library(igraph)
+
+# sample lon/lat points (coarse sampling for an example vignette)
+lon_seq <- seq(-180, 180, by = 10)
+lat_seq <- seq(-90, 90, by = 10)
+pts <- expand.grid(lon = lon_seq, lat = lat_seq)
+pts_sf <- sf::st_as_sf(pts, coords = c("lon", "lat"), crs = 4326)
+
+# map sampled points to H3 resolution 0 cells and keep unique cells
+h3_cells <- h3jsr::point_to_cell(pts_sf, res = 0)
+h3_cells_unique <- unique(h3_cells)
+
+# get centroids for those H3 cells (site coordinates)
+centroids_sf <- h3jsr::cell_to_point(h3_cells_unique)
+coords <- sf::st_coordinates(centroids_sf)
+#plot poitns
+plot(coords, pch = 20, xlab = "Longitude", ylab = "Latitude", main = "Daisyworld Sites (H3 res 0)")
+plot(h3jsr::cell_to_polygon(h3_cells_unique), border = 'lightblue', add = TRUE)
+
+df_cells <- data.frame(x = coords[,1], y = coords[,2], h3_cell = h3_cells_unique, stringsAsFactors = FALSE)
+
+# Create 100 timesteps changing every 1,000 years
+duration <- list(from = -999, to = 0, by = 1, unit = "kyr")
+time_steps <- paste0(seq(duration$from, duration$to, by = duration$by), duration$unit)
+
+# base spatial gradient (longitude scaled 0..1)
+lon_scaled <- (df_cells$x + 180) / 360
+n_sites <- nrow(df_cells)
+n_ts <- length(time_steps)
+
+# Radiation: latitudinal gradient (approximate insolation ~ cos(latitude))
+# More radiation near the equator (lat ~ 0), less toward the poles.
+lat_rad <- df_cells$y * pi / 180
+lat_scaled <- cos(lat_rad)              # ~1 at equator, ~0 at poles
+# Normalize to 0..1 to match downstream expectations
+lat_scaled <- (lat_scaled - min(lat_scaled)) / (max(lat_scaled) - min(lat_scaled))
+# reuse the variable name expected by the later radiation generation code
+lon_scaled <- lat_scaled
+radiation_mat <- matrix(NA_real_, nrow = n_sites, ncol = n_ts)
+for (t in seq_len(n_ts)) {
+  rad_time_var <- 0.05 * sin(2 * pi * (t / n_ts))
+  radiation_mat[, t] <- pmin(pmax(lon_scaled + rad_time_var, 0), 1)
+}
+colnames(radiation_mat) <- time_steps
+
+# Mean temperature: 10..30 over longitude + slight warming trend across time
+mean_temp_mat <- matrix(NA_real_, nrow = n_sites, ncol = n_ts)
+for (t in seq_len(n_ts)) {
+  time_trend <- (t - 1) / (n_ts - 1) * 1.5 # total 1.5 °C warming
+  mean_temp_mat[, t] <- 10 + 20 * lon_scaled + time_trend
+}
+colnames(mean_temp_mat) <- time_steps
+
+# assemble env data.frames (x, y, then time columns)
+radiation_df <- data.frame(x = df_cells$x, y = df_cells$y, radiation_mat, check.names = FALSE)
+mean_temp_df <- data.frame(x = df_cells$x, y = df_cells$y, mean_temp_mat, check.names = FALSE)
+
+# assemble a minimal spaces skeleton
+space <- list()
+space$env <- list(radiation = radiation_df, mean_temperature = mean_temp_df)
+space$meta <- list(
+  type = "h3",
+  type_spec = list(res = 0),
+  duration = duration,
+  area = list(total_area = NA, n_sites = n_sites, unit = "km2"),
+  crs = "+proj=longlat +datum=WGS84 +no_defs",
+  cost_function = list(NA),
+  geodynamic = FALSE,
+  author = "Oskar Hagen",
+  source = "synthetic",
+  description = list(environment = "synthetic longitudinal gradients over time", methods = "generated in vignette")
+)
+
+# check space
+# gen3sis2::check_spaces(space) # should fail due to missing area fields
+
+# compute extent used by gen3sis2 plotting helpers
+space$meta$area$extent <- list(xmin = min(df_cells$x), xmax = max(df_cells$x), ymin = min(df_cells$y), ymax = max(df_cells$y))
+
+# Compute H3 cell areas (km2) and populate total_area, n_sites and unit so the
+# `area` list contains the fields expected by gen3sis2/spac3tools helpers.
+# We use h3jsr::cell_area() with simple=TRUE to get cell areas for our site cells.
+cell_areas_km2 <- h3jsr::cell_area(df_cells$h3_cell, unit = "km2", simple = TRUE)
+space$meta$area$total_area <- sum(cell_areas_km2, na.rm = TRUE)
+space$meta$area$n_sites <- n_sites
+space$meta$area$unit <- "km2"
+space$meta$cost_function <- list("iGraph vignette method TODO, fix this bypass") # placeholder
+space$meta$geodynamic <- FALSE # no geodynamics in this simple example
+
+cat(sprintf("Computed total_area: %0.2f km2 (n_sites = %d)\n", space$meta$area$total_area, space$meta$area$n_sites))
+
+# final check
+gen3sis2::check_spaces(space) # should pass
+
+
+cat(sprintf("Created %d sites and %d timesteps.\n", n_sites, n_ts))
+cat(c("Daisy ready! From", colnames(space$env$radiation)[c(3,4)], "...", tail(colnames(space$env$radiation), 3)))
+```
+
+## (Optional) Create full gen3sis2 spaces and validate (commented heavy work)
+
+The code below shows how you could create a full gen3sis2 `spaces` object and run `gen3sis2::check_spaces()` to validate it. It is intentionally commented-out because it can be labour- and time-intensive (distance calculations, geocorrection, etc.). Keep the code commented until you are ready to run it on a machine suited for the work.
+
+```r
+# # Prepare a gen3sis2-style `env` list from our `space` skeleton (columns must match time_steps)
+# env_list <- list(
+#   radiation = space$env$radiation,
+#   mean_temperature = space$env$mean_temperature
+# )
+#
+# # Sanity check: ensure time-step names match
+# # if (!all(colnames(env_list[[1]])[-c(1,2)] == time_steps)) stop("Time-step name mismatch; check duration/time_steps")
+#
+# # The following is heavy: it will compute distances and possibly transition/correction matrices.
+# if (requireNamespace("gen3sis2", quietly = TRUE)) {
+#   try({
+#     gs <- gen3sis2::create_spaces(
+#       env = env_list,
+#       type = "h3",
+#       duration = duration,
+#       area = list(extent = space$meta$area$extent,
+#                   total_area = space$meta$area$total_area,
+#                   n_sites = space$meta$area$n_sites,
+#                   unit = space$meta$area$unit),
+#       crs = space$meta$crs,
+#       cost_function = list(function(src, dest) { # placeholder simple cost
+#         # return 1 for connected neighbors; replace with domain-specific rules
+#         return(1)
+#       }),
+#       geodynamic = space$meta$geodynamic,
+#       type_spec = space$meta$type_spec,
+#       full_dists = TRUE,
+#       overwrite_output = TRUE
+#     )
+#
+#     # validate the created space
+#     gen3sis2::check_spaces(gs)
+#
+#     # save the generated space if you want to keep it
+#     saveRDS(gs, file.path(out_dir, "spaces_gen3sis2.rds"))
+#   }, silent = FALSE)
+# } else {
+#   message("Install 'gen3sis2' to create full gen3sis2 spaces from this skeleton.")
+# }
+#
+# # Robustness tips (short):
+# # - Cache intermediate results (transition/correction, distances) to disk to avoid recomputing.
+# # - Choose k (neighbours) or an alternative connectivity carefully; document the choice.
+# # - Validate with gen3sis2::check_spaces before running expensive analyses.
+# # - For reproducibility, fix seeds and record parameter choices (k, cost function, etc.).
+```
+
+## Compute pairwise geographic distance matrix (km)
+
+```{r compute-distances}
+# Build a k-nearest-neighbour graph using great-circle distances and compute
+# minimal path distances (graph shortest paths) to emulate gen3sis2's minimal
+# distances on a connectivity graph.
+library(igraph)
+
+# compute full pairwise great-circle distances (meters -> km)
+coords_mat <- as.matrix(df_cells[, c("x", "y")])
+dist_m_geo_km <- geosphere::distm(coords_mat, coords_mat) / 1000
+
+# build k-NN adjacency (k neighbors each direction)
+k <- 6
+adj_mat <- matrix(0, nrow = n_sites, ncol = n_sites)
+for (i in seq_len(n_sites)){
+  ord <- order(dist_m_geo_km[i, ], decreasing = FALSE)
+  # skip first (distance zero to self)
+  neighs <- ord[2:(k+1)]
+  adj_mat[i, neighs] <- dist_m_geo_km[i, neighs]
+}
+# make undirected by taking minimum weight if edges exist both ways
+adj_mat_undir <- pmin(adj_mat, t(adj_mat))
+adj_mat_undir[is.infinite(adj_mat_undir)] <- 0
+
+# create igraph object: treat zeros as no edge
+g <- graph_from_adjacency_matrix(adj_mat_undir, mode = "undirected", weighted = TRUE, diag = FALSE)
+
+# compute all-pairs shortest paths (weights = distance in km)
+dist_matrix_graph <- distances(g, v = V(g), to = V(g), weights = E(g)$weight)
+
+# For any disconnected pairs, distances() returns Inf; replace by great-circle direct distance as fallback
+inf_idx <- which(is.infinite(dist_matrix_graph), arr.ind = TRUE)
+if (nrow(inf_idx) > 0) {
+  for (r in seq_len(nrow(inf_idx))){
+    i <- inf_idx[r,1]; j <- inf_idx[r,2]
+    dist_matrix_graph[i,j] <- dist_m_geo_km[i,j]
+  }
+}
+
+rownames(dist_matrix_graph) <- df_cells$h3_cell
+colnames(dist_matrix_graph) <- df_cells$h3_cell
+
+dist_m <- dist_matrix_graph
+cat(sprintf("Distance matrix dimensions: %d x %d (km)\n", nrow(dist_m), ncol(dist_m)))
+
+## Save distances as 'distances_full_0.rds' to mimic gen3sis2 output structure
+out_dir <- file.path(tempdir(), "h3_vignette_example")
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(file.path(out_dir, "distances_full"), showWarnings = FALSE)
+saveRDS(dist_m, file.path(out_dir, "distances_full", "distances_full_0.rds"))
+#peak at the first few rows/columns
+dist_m[1:6, 1:6]
+```
+
+## Visualise the synthetic gradients
+
+The two plots below show the spatial pattern of the synthetic longitudinal gradients we created. The first is `radiation` (values scaled 0..1) and the second is `mean_temp` (degrees C). Points are H3 cell centroids at resolution 0.
+
+```{r plot-gradients, fig.width=7, fig.height=3.5}
+# plotting packages
+library(ggplot2)
+pd <- space$env$radiation[,c(1,2,3)]
+colnames(pd)[3] <- "radiation"
+
+g1 <- ggplot(pd, aes(x = x, y = y)) +
+  geom_point(aes(color = radiation), size = 1.2, alpha = 0.8) +
+  scale_color_gradient(low = "blue", high = "orange") +
+  coord_fixed() +
+  labs(title = "Radiation (synthetic longitudinal gradient)", color = "radiation") +
+  theme_minimal()
+
+pd <- space$env$mean_temperature[,c(1,2,3)]
+colnames(pd)[3] <- "mean_temp"
+g2 <- ggplot(pd, aes(x = x, y = y)) +
+  geom_point(aes(color = mean_temp), size = 1.2, alpha = 0.8) +
+  scale_color_gradient(low = "yellow", high = "red") +
+  coord_fixed() +
+  labs(title = "Mean Temperature (synthetic longitudinal gradient)", color = "mean_temp") +
+  theme_minimal()
+
+print(g2)
+```
+
+## Ordination of the distance matrix (MDS)
+
+We can visualise the geographic structure captured by the distance matrix using classical multidimensional scaling (MDS). Points are coloured by `mean_temp` to show how environmental gradients map onto geographic distances.
+
+```{r mds-plot, fig.width=6, fig.height=4}
+# run classical MDS on the distance matrix
+mds <- cmdscale(as.dist(dist_m), k = 2)
+# derive a site-level mean temperature (average across time columns in the env table)
+mean_temp_vec <- rowMeans(space$env$mean_temperature[ , -(1:2)], na.rm = TRUE)
+mds_df <- data.frame(MDS1 = mds[,1], MDS2 = mds[,2], mean_temp = mean_temp_vec)
+
+ggplot(mds_df, aes(x = MDS1, y = MDS2, color = mean_temp)) +
+  geom_point(size = 1.5, alpha = 0.9) +
+  scale_color_gradient(low = "yellow", high = "red") +
+  labs(title = "MDS ordination of geographic distances", color = "mean_temp") +
+  theme_minimal()
+```
+
+  ## Plot using gen3sis2 plotting helpers
+
+  If you have the `gen3sis2` package installed, you can use its plotting helpers to visualise the space directly. The chunk below checks for `gen3sis2` and calls `plot_space_overview()` for `radiation` and `mean_temp`.
+
+  ```{r gen3sis2-plot, eval = requireNamespace("gen3sis2", quietly = TRUE), fig.width=7, fig.height=3.5}
+  
+gen3sis2::plot_space_overview(space) # TODO, check breaking polygons
+
+  ```
+
+## Save Daisyworld in a `spaces.rds` + `distances_full` layout
+
+```{r save-artifacts, eval = TRUE}
+# create a temporary output directory (example)
+out_dir <- file.path(tempdir(), "h3_vignette_example")
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(file.path(out_dir, "distances_full"), showWarnings = FALSE)
+
+# save the distances matrix in the same naming convention used by the package
+saveRDS(dist_m, file.path(out_dir, "distances_full", "distances_full_0.rds"))
+# save the spaces.rds object
+saveRDS(space, file.path(out_dir, "spaces.rds"))
+
+cat(sprintf("Saved example spaces.rds and distances to: %s\n", normalizePath(out_dir)))
+```
+
+## Notes
+
+- This vignette constructs a minimal `spaces.rds` object that follows the shape expected by the package (env list of data.frames with `x`, `y`, and time columns, plus a `meta` block describing `type` and `type_spec`).
+- The distance matrix here is straight-line geographic distance (great-circle) in kilometres. If you need a cost-based distance matrix compatible with a particular `cost_function` you can compute that and replace the saved `distances_full_0.rds` accordingly.
+
+## Try it
+
+If you have `gen3sis2` installed, you can run a simple Daisyworld simulation using the generated `spaces.rds` and `distances_full_0.rds`. The code below shows how to set up and run the simulation.
+```{r run-daisyworld, eval = requireNamespace("gen3sis2", quietly = TRUE)}
+library(gen3sis2)
+# get path based on package dir
+config_file <- system.file(file.path("extdata/Daisyworld/config_daisyworld"), package="spac3tools")
+
+config_file<-""
+config_obj <- gen3sis2::create_input_config(config_file)
+dirs <- gen3sis2::prepare_directories(config_file = config_file, input_directory = system.file("extdata", "Daisyworld", package = "spac3tools"))
+# point `landscape` to your spaces.rds location inside the input directory
+gen3sis2::run_simulation(config = config_obj, landscape = file.path(dirs$input, "spaces.rds"), output_directory = dirs$output)
+```
+
