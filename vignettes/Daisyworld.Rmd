@@ -36,15 +36,18 @@ library(sf)
 library(geosphere)
 library(igraph)
 
-# sample lon/lat points (coarse sampling for an example vignette)
-lon_seq <- seq(-180, 180, by = 10)
-lat_seq <- seq(-90, 90, by = 10)
-pts <- expand.grid(lon = lon_seq, lat = lat_seq)
-pts_sf <- sf::st_as_sf(pts, coords = c("lon", "lat"), crs = 4326)
+# # sample lon/lat points (coarse sampling for an example vignette)
+# lon_seq <- seq(-180, 180, by = 10)
+# lat_seq <- seq(-90, 90, by = 10)
+# pts <- expand.grid(lon = lon_seq, lat = lat_seq)
+# pts_sf <- sf::st_as_sf(pts, coords = c("lon", "lat"), crs = 4326)
+# 
+# # map sampled points to H3 resolution 0 cells and keep unique cells
+# h3_cells <- h3jsr::point_to_cell(pts_sf, res = 0)
+# h3_cells_unique <- unique(h3_cells)
 
-# map sampled points to H3 resolution 0 cells and keep unique cells
-h3_cells <- h3jsr::point_to_cell(pts_sf, res = 0)
-h3_cells_unique <- unique(h3_cells)
+# get h3 cells at resolution 0
+h3_cells_unique <- h3jsr::get_res0()
 
 # get centroids for those H3 cells (site coordinates)
 centroids_sf <- h3jsr::cell_to_point(h3_cells_unique)
@@ -56,7 +59,8 @@ plot(h3jsr::cell_to_polygon(h3_cells_unique), border = 'lightblue', add = TRUE)
 df_cells <- data.frame(x = coords[,1], y = coords[,2], h3_cell = h3_cells_unique, stringsAsFactors = FALSE)
 
 # Create 100 timesteps changing every 1,000 years
-duration <- list(from = -999, to = 0, by = 1, unit = "kyr")
+# duration tem que ser positivo, senão a simulação quebra no setup_spaces
+duration <- list(from = 999, to = 0, by = -1, unit = "kyr")
 time_steps <- paste0(seq(duration$from, duration$to, by = duration$by), duration$unit)
 
 # base spatial gradient (longitude scaled 0..1)
@@ -90,6 +94,14 @@ colnames(mean_temp_mat) <- time_steps
 # assemble env data.frames (x, y, then time columns)
 radiation_df <- data.frame(x = df_cells$x, y = df_cells$y, radiation_mat, check.names = FALSE)
 mean_temp_df <- data.frame(x = df_cells$x, y = df_cells$y, mean_temp_mat, check.names = FALSE)
+
+rows_naming <- rownames(radiation_df)
+
+# Admir: should be matrices
+radiation_df <- as.matrix(radiation_df)
+mean_temp_df <- as.matrix(mean_temp_df)
+
+row.names(radiation_df) <- row.names(mean_temp_df) <- rows_naming
 
 # assemble a minimal spaces skeleton
 space <- list()
@@ -196,12 +208,17 @@ library(igraph)
 
 # compute full pairwise great-circle distances (meters -> km)
 coords_mat <- as.matrix(df_cells[, c("x", "y")])
+
+
 dist_m_geo_km <- geosphere::distm(coords_mat, coords_mat) / 1000
+
+row.names(dist_m_geo_km) <- colnames(dist_m_geo_km) <- row.names(df_cells)
 
 # build k-NN adjacency (k neighbors each direction)
 k <- 6
 adj_mat <- matrix(0, nrow = n_sites, ncol = n_sites)
 for (i in seq_len(n_sites)){
+  # i <- 1
   ord <- order(dist_m_geo_km[i, ], decreasing = FALSE)
   # skip first (distance zero to self)
   neighs <- ord[2:(k+1)]
@@ -226,8 +243,12 @@ if (nrow(inf_idx) > 0) {
   }
 }
 
-rownames(dist_matrix_graph) <- df_cells$h3_cell
-colnames(dist_matrix_graph) <- df_cells$h3_cell
+# rownames(dist_matrix_graph) <- df_cells$h3_cell
+# colnames(dist_matrix_graph) <- df_cells$h3_cell
+
+# Admir added:
+row.names(dist_matrix_graph) <- colnames(dist_matrix_graph) <- row.names(df_cells)
+#
 
 dist_m <- dist_matrix_graph
 cat(sprintf("Distance matrix dimensions: %d x %d (km)\n", nrow(dist_m), ncol(dist_m)))
@@ -325,12 +346,11 @@ If you have `gen3sis2` installed, you can run a simple Daisyworld simulation usi
 ```{r run-daisyworld, eval = requireNamespace("gen3sis2", quietly = TRUE)}
 library(gen3sis2)
 # get path based on package dir
-config_file <- system.file(file.path("extdata/Daisyworld/config_daisyworld"), package="spac3tools")
+config_file <- system.file("/extdata/Daisyworld/config_daisyworld.R", package ="spac3tools")
 
-config_file<-""
 config_obj <- gen3sis2::create_input_config(config_file)
 dirs <- gen3sis2::prepare_directories(config_file = config_file, input_directory = system.file("extdata", "Daisyworld", package = "spac3tools"))
 # point `landscape` to your spaces.rds location inside the input directory
-gen3sis2::run_simulation(config = config_obj, landscape = file.path(dirs$input, "spaces.rds"), output_directory = dirs$output)
+gen3sis2::run_simulation(config = config_obj, space = out_dir, output_directory = dirs$output)
 ```
 

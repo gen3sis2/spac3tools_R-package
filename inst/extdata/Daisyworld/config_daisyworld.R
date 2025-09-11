@@ -27,7 +27,7 @@
 # random seed for reproducibility
 random_seed <- 42
 # start and end times (these follow the vignette: -999..0 kyr)
-start_time <- -999
+start_time <- 999
 end_time <- 0
 # maximum numbers (safety limits)
 max_number_of_species <- 20000
@@ -66,7 +66,7 @@ initial_abundance <- 10
 # This mirrors the classic setup where two daisy types compete spatially and
 # affect planetary albedo via their coverage.
 create_ancestor_species <- function(space, config) {
-  ancestor_species <- list()
+  new_species <- list()
   for(i in 1:2){
     initial_cells <- sample(rownames(space$coordinates),3)
     new_species[[i]] <- create_species(initial_cells, config)
@@ -83,7 +83,7 @@ create_ancestor_species <- function(space, config) {
     new_species[[i]]$traits[, "albedo"] <- albedo
   }
 
-  return(ancestor_species)
+  return(new_species)
 }
 
 ## DISPERSAL --------------------------------------------------------------
@@ -115,7 +115,7 @@ apply_ecology <- function(abundance, traits, space, config) {
   #abundance threshold
   survive <- abundance>=abundance_threshold
   abundance[!survive] <- 0
-  abundance <- (( 1-abs( traits[, "temp"] - space[, "temp"]))*abundance_scale)*as.numeric(survive)
+  abundance <- (( 1-abs( traits[, "opt_temp"] - space[, "temp"]))*abundance_scale)*as.numeric(survive)
   #abundance threshold
   abundance[abundance<abundance_threshold] <- 0
   k <- ((space[,"area"]*(space[,"arid"]+0.1)*(space[,"temp"]+0.1))*abundance_scale^2)
