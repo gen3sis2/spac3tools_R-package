@@ -25,6 +25,9 @@ jobs:
       - name: Install remotes
         run: Rscript -e 'install.packages("remotes", repos="https://cloud.r-project.org")'
 
+      - name: Install terra
+        run: Rscript -e 'install.packages("terra")'
+
       - name: Install gen3sis2
         run: Rscript -e 'remotes::install_github("ohagen/gen3sis_rf")'
 
