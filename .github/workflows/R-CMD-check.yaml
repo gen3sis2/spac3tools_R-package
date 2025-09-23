@@ -27,7 +27,7 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      - name: Install GitHub package
+      - name: Install gen3sis2
         run: Rscript -e 'remotes::install_github("ohagen/gen3sis_rf")'
 
       - uses: r-lib/actions/check-r-package@v2
