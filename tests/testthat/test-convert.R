@@ -3,7 +3,8 @@
 # landscape_to_spaces ----
 test_that("landscape_to_spaces works",{
   withr::with_tempdir({
-    landscapes_path <- system.file("extdata/SouthAmerica/landscape/", package = "gen3sis2")
+    #landscapes_path <- system.file("extdata/SouthAmerica/landscape/", package = "gen3sis2")
+    landscapes_path <- system.file("extdata/landscapes/", package = "spac3tools")
     old_landcape <- readRDS(file.path(landscapes_path, "landscapes.rds"))
     spaces_path <- file.path(getwd(),"spaces")
     dir.create(spaces_path)
