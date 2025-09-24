@@ -173,7 +173,7 @@ space_raster_to_h3 <- function(dir_input,
   # o_gls_all: original raster-spaces.rds
   # o_cd_fl: full distances files
   # numb_ts: number of timesteps
-
+  # browser()
   # Set up dirs
   gen3sis2:::prepare_dirs(dir_input, dir_output)
   if (reports) {
@@ -208,15 +208,29 @@ space_raster_to_h3 <- function(dir_input,
   all_pts_4326 <- sf::st_transform(all_pts_sf, 4326) # transform to 4326
 
   # h3_fill: cells corresponding to a convex polygon around all points
+  # browser()
   h3_fill <- all_pts_4326 |>
     sf::st_union() |>
-    sf::st_convex_hull() |>
-    h3jsr::polygon_to_cells(res=res)
+    sf::st_convex_hull()
 
-  h3_fill <- unlist(h3_fill) |>
-    h3jsr::get_disk(2) |>
-    unlist() |>
-    unique()
+  if(sf::st_bbox(h3_fill)[["xmin"]] == -180 &
+     sf::st_bbox(h3_fill)[["xmax"]] ==  180 &
+     sf::st_bbox(h3_fill)[["ymin"]] ==  -90 &
+     sf::st_bbox(h3_fill)[["ymax"]] ==   90) {
+
+    h3_fill <- h3jsr::get_res0() |>
+      h3jsr::get_children(res = res) |>
+      unlist() |>
+      unique()
+  } else {
+    h3_fill <- h3jsr::polygon_to_cells(h3_fill, res=res)
+    h3_fill <- unlist(h3_fill) |>
+      h3jsr::get_disk(2) |>
+      unlist() |>
+      unique()
+  }
+
+  # browser()
 
   # h3_cell_idx: cells corresponding only to the points itself
   h3_cell_idx <- h3jsr::point_to_cell(all_pts_4326, res = res)
@@ -262,6 +276,7 @@ space_raster_to_h3 <- function(dir_input,
   }
 
   # Project values from raster to h3 aggregating when necessary
+  #browser()
   envar <- names(o_gls_all$env)
   envar_superlist <- list()
   for (vari in envar) {
@@ -274,12 +289,14 @@ space_raster_to_h3 <- function(dir_input,
       # t_s <- time_steps[[1]]
       ts_df <- vari_df[,c("x","y","h3_cell",t_s)]
       colnames(ts_df)[ncol(ts_df)] <- paste0("place_holder_",colnames(ts_df)[ncol(ts_df)])
-      agg_formula <- paste(paste0("place_holder_",t_s), "~", "h3_cell") |> stats::as.formula()
+      #browser()
+      agg_formula <- paste(paste0("`place_holder_",t_s,"`"), "~", "h3_cell") |> stats::as.formula()
       agg_df_var <- stats::aggregate(agg_formula, data = ts_df, FUN = agg_fun)
       agg_df_var <- merge(ts_df, agg_df_var, by = "h3_cell", all.x = TRUE, suffixes = c("_raster","_h3"))
       agg_df <- append(agg_df,list(agg_df_var))
     }
 
+    #browser()
     merged_final_left <- base::Reduce(function(df1, df2) {
       base::merge(df1, df2, by = c("h3_cell","x","y"), all.x = T)
     }, agg_df)
