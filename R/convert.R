@@ -287,6 +287,7 @@ space_raster_to_h3 <- function(dir_input,
     agg_df <- list()
     for (t_s in time_steps) {
       # t_s <- time_steps[[1]]
+      browser()
       ts_df <- vari_df[,c("x","y","h3_cell",t_s)]
       colnames(ts_df)[ncol(ts_df)] <- paste0("place_holder_",colnames(ts_df)[ncol(ts_df)])
       #browser()
