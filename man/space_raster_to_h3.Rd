@@ -37,7 +37,7 @@ when necessary. Examples include:
 
 \item{reports}{logical. Default is FALSE. If TRUE, saves four files:
 \itemize{
- \item envs_raster.rds - the original environmental variables in raster spaces
+ \item envs_raster.rds - the original enviromental variables in raster spaces
  \item raster_h3_dictionary.txt - a data.frame containing H3 cells and the indexes of raster cells resumed in it
  \item representative_cells.txt - a data.frame containing H3 cells and the index of the chosen representative raster cell
  \item conversion_error.txt - a data.frame containing the centroids for each raster and its respective H3 cell and the distance between them
