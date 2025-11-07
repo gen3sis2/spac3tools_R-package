@@ -49,7 +49,7 @@ i.e. deciding final value based on the input data using \code{?is_geodynamic}.}
 \item{timesteps}{vector of names for every time-step to represent the time-step at gen3sis ready space.
 If timesteps=NULL (default), time-steps are sequentially numbered from 0 to the latest time-step.}
 
-\item{crs}{the coordinate reference system in crs format (see raster::crs). Default is defined by \code{\link{create_spaces}}}
+\item{crs}{the coordinate reference system in crs format (see raster::crs). Default is defined by \code{\link{gen3sis2::create_spaces}}}
 
 \item{author}{author of the space, see \code{?create_spaces}}
 

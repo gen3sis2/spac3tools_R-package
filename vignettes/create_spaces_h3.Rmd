@@ -5,7 +5,7 @@ output: html_notebook
 
 # Introduction
 
-In gen3sis2, spaces.rds can be created using the `gen3sis2::create_spaces_raster` function, from a named list of rasters. This creates a `raster` type input spaces that can be used within the `gen3sis2::run_simulation` function. However, `gen3sis2` support not only `raster` type inputs, but also `h3` and `points`. `spac3tools` can both convert ``` raster`` type spaces to ```h3`, via`space_raster_to_h3`function, and create a`h3`spaces from scratch, using`create_spaces_h3`function, with user-defined H3 addresses. In this vignette, we will see two methods to create an`h3\` type spaces and run a simulation to test our inputs.
+In gen3sis2, spaces.rds can be created using the `gen3sis2::create_spaces_raster` function, from a named list of rasters. This creates a `raster` type input spaces that can be used within the `gen3sis2::run_simulation` function. However, `gen3sis2` support not only `raster` type inputs, but also `h3` and `points`. `spac3tools` can both convert `raster` type spaces to `h3`, via `space_raster_to_h3` function, and create a`h3`spaces from scratch, using`create_spaces_h3`function, with user-defined H3 addresses. In this vignette, we will see two methods to create an`h3\` type spaces and run a simulation to test our inputs.
 
 # 1. Organize your data
 
@@ -36,17 +36,25 @@ head(h3_list)
 
 Most environmental data is available in rasters. For that reason, to create an `h3_list`, users probably will need to:
 
-- 1) Decide which are the H3 cells of interest
-- 2) Extract values for this cells from rasters
-- 3) Organize the data in a named list
+-   
+
+    1)  Decide which are the H3 cells of interest
+
+-   
+
+    2)  Extract values for this cells from rasters
+
+-   
+
+    3)  Organize the data in a named list
 
 To ease this process, `spac3tools` features the function `data_raster_to_h3`, which transform a list of rasters in a list of data.frames to be used within `create_spaces_h3`. The function takes as inputs:
 
-- `h3_address`: a set of H3 cells' address
-- `res`: an H3 resolution
-- `raster_list`: a named list of rasters in the same format as used in `gen3sis2::create_spaces_raster`
+-   `h3_address`: a set of H3 cells' address
+-   `res`: an H3 resolution
+-   `raster_list`: a named list of rasters in the same format as used in `gen3sis2::create_spaces_raster`
 
-Users must provide `h3_address` *or* `res`. In case of a set of H3 addresses is passed, the function will extract data from the rasters at the centroid of the cells. If a resolution is provided, the function will try to extract data for _all global cells at the given resolution_. The `raster_list` follows the same format as the one used in `gen3sis::create_spaces_raster`.
+Users must provide `h3_address` *or* `res`. In case of a set of H3 addresses is passed, the function will extract data from the rasters at the centroid of the cells. If a resolution is provided, the function will try to extract data for *all global cells at the given resolution*. The `raster_list` follows the same format as the one used in `gen3sis::create_spaces_raster`.
 
 Let's follow an example. First, load some raster data:
 
@@ -140,16 +148,37 @@ gen3sis2::plot_space_overview(space_r)
 
 # 2.1 Resolution advantages
 
-One advantage of creating an `h3` spaces from scratch instead of converting a `raster` one is the resolution freedom. For example, if we try to convert the raster spaces we created to an H3 resolution of 3, it will not end well:
+One advantage of creating an `h3` spaces from scratch instead of converting a `raster` one is the resolution freedom. For example, if we try to convert the raster spaces we created to an H3 resolution of 2, it will not end well, because the area that each raster cells cover at 5 degrees resolution is much different of the area each H3 cell cover at resolution 3, causing blank spaces between cells to appear:
 
 ```{r}
-# TODO
 space_raster_to_h3(
   file.path(tempdir(),"raster"),
   file.path(tempdir(),"h3_converted"),
-  res = 3
+  res = 2
 )
+space <- readRDS(file.path(tempdir(),"h3_converted","spaces.rds"))
+gen3sis2::plot_space_overview(space)
 ```
 
+Now, if we create an `h3` spaces using the same `raster_list`, the results will be much better:
+
+```{r}
+h3_list <- data_raster_to_h3(res = 2, raster_list = raster_list)
+
+create_spaces_h3(
+    h3_list = h3_list,
+    cost_function = function(source, dest){
+      return(1/1000)
+    },
+    output_directory = file.path(tempdir(),"h3"),
+    full_dists = TRUE,
+    overwrite_output = TRUE,
+    verbose = TRUE,
+    duration=list(from=-4, to=0, by=1, unit="Ma"),
+    geodynamic = TRUE
+)
+space <- readRDS(file.path(tempdir(),"h3","spaces.rds"))
+gen3sis2::plot_space_overview(space)
+```
 
 # Running a simulation

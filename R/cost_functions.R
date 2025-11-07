@@ -31,7 +31,7 @@ gcf$XXHarderNA_dist_Km <- function(source, dest){
   }
 }
 
-gcf$X10NA_dist_Km <- function(source, habitable_src, dest, habitable_dest){
+gcf$X10NA_dist_Km <- function(source, dest){
   if (!all(source$habitable, dest$habitable)) {
     return(10/1000)
   } else {

@@ -65,7 +65,6 @@ decompress_space <- function(dir_input=NULL,
   dir_temp_raster=file.path(dir_output, "temp_rasters")
 
   # create raster bricks
-  # browser() FINISH THIS PIPELINE LATER
 
   # od <- dir_output
   dir.create(dir_output, showWarnings = FALSE)
@@ -110,7 +109,7 @@ decompress_space <- function(dir_input=NULL,
   # string_time_step <- paste0(formatC(round(myt,2), width=5, flag="0", digits=2, format="f"),"Ma" )
   gsd <- gen3sis_space$meta$duration
   gen3sis2::create_spaces_raster(raster_list = lsn,
-                                 cost_function = gen3sis_space$meta$cost_function[[cost_function_index]],
+                                 cost_function = ifelse(cost_function_index == 0, gen3sis_space$meta$cost_function, gen3sis_space$meta$cost_function[[cost_function_index]]),
                                  directions=8, output_directory = file.path(dir_output,"decompressed"),
                                  duration = gsd, gsd$unit, full_dists = T, geodynamic=gen3sis_space$meta$geodynamic,
                                 crs=gen3sis_space$meta$crs, verbose=T, overwrite_output = TRUE)
@@ -139,13 +138,6 @@ decompress_space <- function(dir_input=NULL,
   # }
   return(paste0("Space decompressed sucessfully to [", dir_output,"]" ))
 }
-
-
-
-
-
-
-
 
 # TODO add an executable example
 #' Compress a gen3sis2 Space object by removing cost distances
