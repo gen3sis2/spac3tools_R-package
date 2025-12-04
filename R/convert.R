@@ -461,7 +461,7 @@ space_raster_to_h3 <- function(dir_input,
         tiis <- "distances_full_0.rds"
       }
       # lfd_ti = landscapes full distances at ti
-      lfd_ti <- readRDS(file.path(dir_input, "distances_full", tiis)) # TODO FIX THE
+      lfd_ti <- readRDS(file.path(dir_input, "distances_full", tiis))
       cat(paste("Loaded:", rev(o_cd_fl)[ti],"\n"))
 
       new_cost_dist_full <- lfd_ti[row.names(lfd_ti) %in% row.names(envs_h3[[1]]), colnames(lfd_ti) %in% row.names(envs_h3[[1]])]

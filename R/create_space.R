@@ -12,28 +12,22 @@
 #' **src_habitable** (TRUE or FALSE) for habitable condition of the origin sites,
 #' **dest** is a vector of environmental conditions for the destination site, dest_habitable  (TRUE or FALSE) for habitable condition of the destination cell
 #' @param output_directory path for storing the gen3sis ready space (i.e. space.rds, metadata.txt and full- and/or local_distance folders)
-#' @param timesteps vector of names for every time-step to represent the time-step at gen3sis ready space.
-#' If timesteps=NULL (default), time-steps are sequentially numbered from 0 to the latest time-step.
 #' @param full_dists should a full distance matrix be calculated? TRUE or FALSE? Default is FALSE.
 #' If TRUE calculates the entire distance matrix for every time-step and between all habitable cells
 #' (faster CPU time, higher storage required).
 #' If FALSE (default), only local distances are calculated (slower CPU time when simulating but smaller gen3sis space size)
-#' @param crs the coordinate reference system in crs format (see raster::crs). Default is defined by \code{\link{gen3sis2::create_spaces}}
 #' @param overwrite_output TRUE or FALSE
 #' @param verbose print distance calculation progress (default: FALSE)
 #' @param duration list with from, to, by and unit. Default is from -latest time to zero by 1 Ma
 #' @param geodynamic True or False, if the space is dynamic (e.g. sea-level change) or static. Default is NULL,
 #' i.e. deciding final value based on the input data using \code{?is_geodynamic}.
-#' @param author author of the space, see \code{?create_spaces}
-#' @param source source of the space, see \code{?create_spaces}
-#' @param description list with env and methods, see \code{?create_spaces}
 #' @returns no return object. This function saves the space input files for gen3sis at the output_directory
 #'
 #' @importFrom gen3sis2 create_spaces check_spaces
 #' @importFrom h3jsr cell_area get_res
 #'
 #' @export
-#' @examples # TODO
+#' @example inst/examples/create_spaces_h3_help.R
 create_spaces_h3 <- function(
     h3_list,
     cost_function,
@@ -53,17 +47,25 @@ create_spaces_h3 <- function(
   gen3sis2:::create_directories(output_directory, overwrite_output, full_dists)
 
   # compute time-steps
-  if (any(is.na(duration)) || all(!names(duration) %in% c("from", "to", "by", "unit"))) {
-    warning("Duration is ideally informed as a list with from, to, by and unit.")
-    timesteps <- -(length(setdiff(names(h3_list[[1]]), c("x","y","h3_address"))) - 1):0
+  if(!is.list(duration) || any(!c("from", "to", "by", "unit") %in% names(duration))){
+    stop("Duration is ideally informed as a list with from, to, by and unit.")
+  }
 
-    if(is.list(duration) && "unit" %in% names(duration)){
-      warning("Assuming default duration from -latest time to zero by 1 in given unit.")
-      duration <- list(from=timesteps[1], to=0, by=1, unit=duration$unit)
-    } else {
-      warning("Assuming default duration from -latest time to zero by 1 Ma.")
-      duration <- list(from=timesteps[1], to=0, by=1, unit="Ma")
+  if(any(is.na(duration))) {
+    required_elements <- names(which(is.na(duration)))
+
+    if(length(required_elements) > 1){
+      stop("Too many NA in duration. Review necessary.")
     }
+
+    fill <-  switch (required_elements,
+                     "from" = duration$to-((ncol(h3_list[[1]])-4)*duration$by),
+                     "to" = duration$from+((ncol(h3_list[[1]])-4)*duration$by),
+                     "by" = 1,
+                     "unit" = "Ma"
+    )
+
+    duration[[required_elements]] <- fill
   }
 
   timesteps <- paste0(seq(duration$from, duration$to, by = duration$by), duration$unit)
@@ -212,7 +214,7 @@ create_spaces_h3 <- function(
 #' @importFrom terra ext nlyr extract vect
 #'
 #' @export
-#' @examples # TODO
+#' @example inst/examples/create_spaces_h3_help.R
 data_raster_to_h3 <- function(
     h3_address = NULL,
     res = NULL,
@@ -305,7 +307,6 @@ data_raster_to_h3 <- function(
 #' @importFrom Matrix sparseMatrix drop0
 #'
 #' @noRd
-#' @examples # TODO
 get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
   coords <- as.matrix(var_step[, c("x", "y")])
 

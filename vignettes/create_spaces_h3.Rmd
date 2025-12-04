@@ -1,6 +1,11 @@
 ---
 title: "Creating a spaces.rds with H3 data"
-output: html_notebook
+date: "`r format(Sys.time(),  '%d.%m.%Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Converting gen3sis2 raster spaces to h3 and points}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 # Introduction
@@ -21,6 +26,7 @@ Obtaining an H3 cells' centroids is easy using the `h3jsr` package, all is neede
 
 ```{r}
 library(h3jsr)
+library(spac3tools)
 
 h3jsr::cell_to_point(c("8166fffffffffff", "81663ffffffffff"), simple = F)
 ```
