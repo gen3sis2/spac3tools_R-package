@@ -10,7 +10,7 @@
 library(spac3tools)
 
 # Load gen3sis landscapes.rds
-landscapes_path <- system.file("extdata/SouthAmerica/landscape/", package = "gen3sis2")
+landscapes_path <- system.file("extdata/landscapes/", package = "spac3tools")
 old_landcape <- readRDS(file.path(landscapes_path, "landscapes.rds"))
 
 # It contains the old gen3sis format, with only environmental variables
