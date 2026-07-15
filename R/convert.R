@@ -109,7 +109,7 @@ landscape_to_space <- function(dir_input=NA,
                                total_area=total_area,
                                n_sites=n_sites,
                                unit="km2"),
-                     cost_function = cost_function,
+                     cost_function = list(cost_function),
                      geodynamic=NULL,
                      type_spec=list("res"=terra::res(ex_r)),
                      ...
