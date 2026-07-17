@@ -161,329 +161,723 @@ landscape_to_space <- function(dir_input=NA,
 #'
 #'@export
 #'@example inst/examples/conv_space_raster_to_h3_help.R
-space_raster_to_h3 <- function(dir_input,
-                               dir_output=file.path(dir_input, "h3_v2"),
-                               res=0,
-                               verbose=0,
-                               compute_distances=TRUE,
-                               agg_fun = mean,
-                               reports = FALSE
-){
-  # variables lexicon
-  # o_gls_all: original raster-spaces.rds
-  # o_cd_fl: full distances files
-  # numb_ts: number of timesteps
-  # Set up dirs
+space_raster_to_h3 <- function(
+    dir_input,
+    dir_output = file.path(dir_input, "h3_v2"),
+    res = 0,
+    verbose = 0,
+    compute_distances = TRUE,
+    agg_fun = mean,
+    reports = FALSE
+) {
+  # ---------------------------------------------------------------------------
+  # 1. Prepare output directories and load the source space
+  # ---------------------------------------------------------------------------
+
   gen3sis2:::prepare_dirs(dir_input, dir_output)
+
   if (reports) {
-    report_path <- file.path(dir_output,"reports")
-    dir.create(report_path)
+    report_path <- file.path(dir_output, "reports")
+    dir.create(report_path, recursive = TRUE, showWarnings = FALSE)
   }
 
-  # origin space
-  o_gls_all <- readRDS(file.path(dir_input, "spaces.rds"))
-  # origin full distances
-  o_cd_fl  <- list.files(file.path(dir_input, "distances_full"))
-  if (length(o_cd_fl)==0){
-    stop("No full distances found")
-  }
-  # order o_cd_fl
-  numb_ts <- as.numeric(gsub("[^0-9.-]+", "", o_cd_fl))
-  o_cd_fl <- o_cd_fl[order(numb_ts)]
+  source_space <- readRDS(file.path(dir_input, "spaces.rds"))
 
-  # create dir_output distances_full folder
-  dir.create(file.path(dir_output, "distances_full"), showWarnings = FALSE)
-  time_steps <- colnames(o_gls_all$env[[1]][,-c(1,2)])
+  time_steps <- colnames(source_space$env[[1]])[
+    !colnames(source_space$env[[1]]) %in% c("x", "y")
+  ]
   n_ts <- length(time_steps)
 
-  if (o_gls_all$meta$geodynamic & n_ts!=length(o_cd_fl)){
-    #stop function and show error message
-    stop("Mismatch on number of time steps and full distances.rds")
-  }
+  # Distance files are only required when distance conversion is requested.
+  distance_files <- character(0)
 
-  # get points and coordinates
-  all_pts <- o_gls_all$env[[1]][,c("x", "y")]
-  all_pts_sf <- sf::st_as_sf(as.data.frame(all_pts), coords = c("x","y"), crs = o_gls_all$meta$crs)
-  all_pts_4326 <- sf::st_transform(all_pts_sf, 4326) # transform to 4326
-
-  # h3_fill: cells corresponding to a convex polygon around all points
-  h3_fill <- all_pts_4326 |>
-    sf::st_union() |>
-    sf::st_convex_hull()
-
-  if(sf::st_bbox(h3_fill)[["xmin"]] == -180 &
-     sf::st_bbox(h3_fill)[["xmax"]] ==  180 &
-     sf::st_bbox(h3_fill)[["ymin"]] ==  -90 &
-     sf::st_bbox(h3_fill)[["ymax"]] ==   90) {
-
-    h3_fill <- h3jsr::get_res0() |>
-      h3jsr::get_children(res = res) |>
-      unlist() |>
-      unique()
-  } else {
-    h3_fill <- h3jsr::polygon_to_cells(h3_fill, res=res)
-    h3_fill <- unlist(h3_fill) |>
-      h3jsr::get_disk(2) |>
-      unlist() |>
-      unique()
-  }
-
-
-  # h3_cell_idx: cells corresponding only to the points itself
-  h3_cell_idx <- h3jsr::point_to_cell(all_pts_4326, res = res)
-
-  # Creates a dictionary of which raster cells are inside each h3 cell
-  h3_cell_dict <- list()
-  for (h3_cll in unique(h3_cell_idx)) {
-    point_cell <- cbind(all_pts,h3_cell_idx) |> as.data.frame()
-    l <- list(row.names(point_cell[point_cell$h3_cell_idx==h3_cll,]))
-    names(l) <- h3_cll
-    h3_cell_dict <- append(h3_cell_dict, l)
-  }
-
-  # saves the dictionary as data.frame
-  if (reports) {
-    temp_df <- do.call(rbind, lapply(names(h3_cell_dict), function(h3) {
-      data.frame(h3_cell = h3, raster_cell = h3_cell_dict[[h3]], stringsAsFactors = FALSE)
-    }))
-
-    write.csv(temp_df,file.path(report_path,"raster_h3_dictionary.txt"), row.names = FALSE)
-  }
-
-  # reduces the dict to a single representative cell based on distance to the H3 centroid
-  for (h3_cll in names(h3_cell_dict)) {
-    cent_h3 <- h3jsr::cell_to_point(h3_cll) |>
-      sf::st_coordinates()
-
-    dist_from_cent <- lapply(h3_cell_dict[[h3_cll]], function(x){
-      geosphere::distGeo(cent_h3, all_pts[as.numeric(x),])
-    }) |>
-      unlist()
-
-    h3_cell_dict[[h3_cll]] <- h3_cell_dict[[h3_cll]][which(dist_from_cent == min(dist_from_cent))]
-  }
-
-  # saves the representative cell
-  if (reports) {
-    temp_df <- do.call(rbind, lapply(names(h3_cell_dict), function(h3) {
-      data.frame(h3_cell = h3, raster_cell = h3_cell_dict[[h3]], stringsAsFactors = FALSE)
-    }))
-
-    write.csv(temp_df, file.path(report_path,"representative_cells.txt"), row.names = FALSE)
-  }
-
-  # Project values from raster to h3 aggregating when necessary
-  envar <- names(o_gls_all$env)
-  envar_superlist <- list()
-  for (vari in envar) {
-    # vari <- envar[[1]]
-    vari_df <- o_gls_all$env[[vari]] |> as.data.frame()
-    vari_df$h3_cell <- h3_cell_idx
-
-    agg_df <- list()
-    for (t_s in time_steps) {
-      # t_s <- time_steps[[1]]
-      ts_df <- vari_df[,c("x","y","h3_cell",t_s)]
-      colnames(ts_df)[ncol(ts_df)] <- paste0("place_holder_",colnames(ts_df)[ncol(ts_df)])
-      agg_formula <- paste(paste0("`place_holder_",t_s,"`"), "~", "h3_cell") |> stats::as.formula()
-      agg_df_var <- stats::aggregate(agg_formula, data = ts_df, FUN = agg_fun)
-      agg_df_var <- merge(ts_df, agg_df_var, by = "h3_cell", all.x = TRUE, suffixes = c("_raster","_h3"))
-      agg_df <- append(agg_df,list(agg_df_var))
-    }
-
-    merged_final_left <- base::Reduce(function(df1, df2) {
-      base::merge(df1, df2, by = c("h3_cell","x","y"), all.x = T)
-    }, agg_df)
-
-    vari_coords <- vari_df[,c("x","y")]
-    vari_coords$original_order <- 1:nrow(vari_coords)
-
-    vari_df <- merge(vari_coords, merged_final_left, by = c("x","y"), all.x = TRUE)
-
-    vari_df <- vari_df[order(vari_df$original_order),]
-    vari_df <- vari_df[,-c(which(colnames(vari_df)=="original_order"))]
-    row.names(vari_df) <- NULL
-
-    new_colnames <- colnames(vari_df[,-c(which(colnames(vari_df)%in%c("x","y","h3_cell")))])
-    new_colnames <- gsub("place_holder_", "", new_colnames)
-    names(vari_df)[which(!names(vari_df)%in%c("x","y","h3_cell"))] <- new_colnames
-
-    # Create multiple list if agg_fun returns more than 1 value
-    if (any(sapply(vari_df, is.matrix))){
-      mtx_columns <- names(vari_df)[sapply(vari_df, is.matrix)]
-      for (mtx_col in mtx_columns) {
-        # mtx_col <- mtx_columns[[1]]
-        temp_df <- as.data.frame(vari_df[,mtx_col])
-        names(temp_df) <- paste0(names(temp_df),"--",mtx_col)
-        vari_df <- vari_df[,-c(which(names(vari_df)==mtx_col))]
-        vari_df <- cbind(vari_df,temp_df)
-      }
-    }
-
-    l <- list(vari_df)
-    names(l) <- vari
-
-    envar_superlist <- append(envar_superlist, l)
-  }
-
-  # organize and plot everything
-  envs_raster <- list()
-  envs_h3 <- list()
-  for (envar in names(envar_superlist)) {
-    # envar <- names(envar_superlist)[[1]]
-    raster_columns <- names(envar_superlist[[envar]])[grep("_raster$",names(envar_superlist[[envar]]))]
-    raster_df <- envar_superlist[[envar]][,c("x","y",raster_columns)]
-    names(raster_df) <- gsub("_raster$","",names(raster_df))
-    l <- list(raster_df)
-    names(l) <- envar
-    envs_raster <- append(envs_raster, l)
-
-    h3_columns <- names(envar_superlist[[envar]])[grep("_h3$",names(envar_superlist[[envar]]))]
-    h3_df <- envar_superlist[[envar]][,c("h3_cell",h3_columns)]
-    h3_df <- h3_df[!duplicated(h3_df$h3_cell),]
-
-    names(h3_df) <- gsub("_h3$","",names(h3_df))
-
-    h3_df <- cbind(
-      h3jsr::cell_to_point(h3_df$h3_cell) |>
-        sf::st_coordinates() |>
-        as.data.frame(),
-      h3_df
+  if (compute_distances) {
+    distance_dir <- file.path(dir_input, "distances_full")
+    distance_files <- list.files(
+      distance_dir,
+      pattern = "^distances_full_.*\\.rds$",
+      full.names = FALSE
     )
 
-    names(h3_df)[c(1,2)] <- c("x","y")
-
-    new_rownames <- c()
-    for (cll in h3_df$h3_cell) {
-      new_rownames <- c(new_rownames, h3_cell_dict[[cll]])
+    if (!length(distance_files)) {
+      stop("No full distance matrices found in: ", distance_dir)
     }
 
-    rownames(h3_df) <- new_rownames
+    distance_numbers <- as.numeric(
+      gsub("[^0-9.-]+", "", distance_files)
+    )
+    distance_files <- distance_files[order(distance_numbers)]
 
-    if (ncol(h3_df) != (n_ts+3)) {
-      var_columns <- setdiff(names(h3_df), c("x","y","h3_cell"))
-      ts_versions <- unique(sub("--.*", "", var_columns))
+    if (
+      isTRUE(source_space$meta$geodynamic) &&
+      n_ts != length(distance_files)
+    ) {
+      stop("Mismatch between environmental timesteps and distance files.")
+    }
 
-      version_list <- lapply(ts_versions, function(v) {
-        cols <- grep(paste0("^", v, "--"), names(h3_df), value = TRUE)
+    dir.create(
+      file.path(dir_output, "distances_full"),
+      recursive = TRUE,
+      showWarnings = FALSE
+    )
+  }
 
-        df_sub <- h3_df[,c(c("x","y","h3_cell"), cols)]
+  # ---------------------------------------------------------------------------
+  # 2. Convert raster-cell coordinates to H3 membership
+  # ---------------------------------------------------------------------------
 
-        names(df_sub)[-1] <- sub(paste0("^", v, "--"), "", names(df_sub)[-1])
+  all_pts <- source_space$env[[1]][, c("x", "y"), drop = FALSE]
+  raster_ids <- rownames(all_pts)
+  # in case their are no row names (although unlikely)
+  if (is.null(raster_ids)) {
+    raster_ids <- as.character(seq_len(nrow(all_pts)))
+    rownames(all_pts) <- raster_ids
+  }
 
-        return(df_sub)
+  all_pts_sf <- sf::st_as_sf(
+    as.data.frame(all_pts),
+    coords = c("x", "y"),
+    crs = source_space$meta$crs
+  )
+  # the crs may not equal 4326, so convert to be sure
+  all_pts_4326 <- sf::st_transform(all_pts_sf, 4326)
+  all_pts_4326_xy <- sf::st_coordinates(all_pts_4326)
+  rownames(all_pts_4326_xy) <- raster_ids
+
+  h3_cell_idx <- h3jsr::point_to_cell(all_pts_4326, res = res)
+
+  # Build the H3 domain once from the union of raster cells that contain habitat
+  # in at least one timestep. The NA mask of the first environmental variable is
+  # sufficient because gen3sis2 requires matching NA masks across variables.
+  habitat_any_raster <- apply(
+    source_space$env[[1]][, time_steps, drop = FALSE],
+    1,
+    function(values) any(!is.na(values))
+  )
+
+  # Sorting the H3 indexes makes the assignment deterministic: the same input
+  # always produces the same numeric site ID. These IDs remain fixed even if
+  # habitat appears or disappears through time.
+  h3_ids <- sort(unique(
+    as.character(h3_cell_idx[habitat_any_raster])
+  ))
+
+  if (!length(h3_ids)) {
+    stop("No H3 cells contain habitat in any timestep.")
+  }
+
+  h3_coordinates <- h3jsr::cell_to_point(h3_ids) |>
+    sf::st_coordinates()
+
+  h3_cell_dictionary <- data.frame(
+    cell_id = seq_along(h3_ids),
+    h3_cell = h3_ids,
+    x = h3_coordinates[, 1],
+    y = h3_coordinates[, 2],
+    stringsAsFactors = FALSE
+  )
+
+  # Character numeric IDs are used because gen3sis2 indexes matrices by row
+  # names and some dispersal code explicitly coerces those names to numeric.
+  h3_cell_dictionary$cell_id <- as.character(
+    h3_cell_dictionary$cell_id
+  )
+
+  h3_to_cell_id <- stats::setNames(
+    h3_cell_dictionary$cell_id,
+    h3_cell_dictionary$h3_cell
+  )
+
+  cell_id_to_h3 <- stats::setNames(
+    h3_cell_dictionary$h3_cell,
+    h3_cell_dictionary$cell_id
+  )
+
+  # Save the permanent lookup regardless of reports. It is required to convert
+  # model output back to real H3 indexes.
+  utils::write.csv(
+    h3_cell_dictionary,
+    file.path(dir_output, "h3_cell_dictionary.csv"),
+    row.names = FALSE
+  )
+
+  # Keep every raster member of each H3 cell. Representatives are selected from
+  # these candidates separately for every distance timestep.
+  h3_cell_members <- split(raster_ids, as.character(h3_cell_idx))
+  h3_cell_members <- h3_cell_members[h3_ids]
+
+  if (reports) {
+    raster_h3_dictionary <- do.call(
+      rbind,
+      lapply(h3_ids, function(h3_id) {
+        data.frame(
+          cell_id = unname(h3_to_cell_id[h3_id]),
+          h3_cell = h3_id,
+          raster_cell = h3_cell_members[[h3_id]],
+          stringsAsFactors = FALSE
+        )
       })
+    )
 
-      if (verbose > 2 & envar == names(envar_superlist[1])) {
-        plot(terra::rast(raster_df[,c("x","y",t_s)], type = "xyz"), main=paste("Raster in",t_s))
+    utils::write.csv(
+      raster_h3_dictionary,
+      file.path(report_path, "raster_h3_dictionary.txt"),
+      row.names = FALSE
+    )
+  }
 
-        h3jsr::cell_to_polygon(stats::na.omit(version_list[[1]][,c("h3_cell",t_s)])$h3_cell) |>
-          plot(main = paste("H3 cells in", t_s))
+  # ---------------------------------------------------------------------------
+  # 3. Rank candidate raster representatives by distance to each H3 centroid
+  # ---------------------------------------------------------------------------
+
+  h3_centroids <- h3_coordinates
+  rownames(h3_centroids) <- h3_ids
+
+  # CHANGED:
+  # The original function compared WGS84 H3 centroids with all_pts in the
+  # source CRS. Here both coordinate sets are explicitly in EPSG:4326.
+  #
+  # We store a ranked list rather than one representative. At each timestep,
+  # the first candidate that exists in that timestep's distance matrix is used.
+  h3_representative_rank <- lapply(names(h3_cell_members), function(h3_id) {
+    candidates <- h3_cell_members[[h3_id]]
+
+    candidate_xy <- all_pts_4326_xy[
+      candidates,
+      c("X", "Y"),
+      drop = FALSE
+    ]
+
+    centroid_xy <- matrix(
+      h3_centroids[h3_id, c("X", "Y")],
+      nrow = length(candidates),
+      ncol = 2,
+      byrow = TRUE
+    )
+
+    candidate_distance <- geosphere::distGeo(
+      centroid_xy,
+      candidate_xy
+    )
+
+    candidates[order(candidate_distance)]
+  })
+
+  names(h3_representative_rank) <- names(h3_cell_members)
+
+  if (reports) {
+    static_representatives <- data.frame(
+      cell_id = unname(h3_to_cell_id[names(h3_representative_rank)]),
+      h3_cell = names(h3_representative_rank),
+      raster_cell = vapply(
+        h3_representative_rank,
+        `[`,
+        character(1),
+        1
+      ),
+      stringsAsFactors = FALSE
+    )
+
+    utils::write.csv(
+      static_representatives,
+      file.path(report_path, "representative_cells_static.txt"),
+      row.names = FALSE
+    )
+  }
+
+  # ---------------------------------------------------------------------------
+  # 4. Aggregate every environmental variable from raster cells to H3 cells
+  # ---------------------------------------------------------------------------
+
+  environmental_superlist <- list()
+
+  for (variable_name in names(source_space$env)) {
+    variable_df <- as.data.frame(source_space$env[[variable_name]])
+    variable_df$h3_cell <- h3_cell_idx
+
+    aggregated_timesteps <- vector("list", length(time_steps))
+    names(aggregated_timesteps) <- time_steps
+
+    for (time_name in time_steps) {
+      timestep_df <- variable_df[
+        ,
+        c("x", "y", "h3_cell", time_name),
+        drop = FALSE
+      ]
+
+      names(timestep_df)[ncol(timestep_df)] <-
+        paste0("place_holder_", time_name)
+
+      aggregation_formula <- stats::as.formula(
+        paste0("`place_holder_", time_name, "` ~ h3_cell")
+      )
+
+      aggregated_value <- stats::aggregate(
+        aggregation_formula,
+        data = timestep_df,
+        FUN = agg_fun
+      )
+
+      aggregated_timesteps[[time_name]] <- merge(
+        timestep_df,
+        aggregated_value,
+        by = "h3_cell",
+        all.x = TRUE,
+        suffixes = c("_raster", "_h3")
+      )
+    }
+
+    merged_variable <- base::Reduce(
+      function(left, right) {
+        merge(
+          left,
+          right,
+          by = c("h3_cell", "x", "y"),
+          all.x = TRUE
+        )
+      },
+      aggregated_timesteps
+    )
+
+    original_coordinates <- variable_df[, c("x", "y"), drop = FALSE]
+    original_coordinates$original_order <- seq_len(nrow(original_coordinates))
+
+    merged_variable <- merge(
+      original_coordinates,
+      merged_variable,
+      by = c("x", "y"),
+      all.x = TRUE
+    )
+
+    merged_variable <- merged_variable[
+      order(merged_variable$original_order),
+      ,
+      drop = FALSE
+    ]
+    merged_variable$original_order <- NULL
+    rownames(merged_variable) <- NULL
+
+    value_columns <- !names(merged_variable) %in% c("x", "y", "h3_cell")
+    names(merged_variable)[value_columns] <- gsub(
+      "place_holder_",
+      "",
+      names(merged_variable)[value_columns]
+    )
+
+    # Preserve support for aggregation functions that return multiple values.
+    if (any(vapply(merged_variable, is.matrix, logical(1)))) {
+      matrix_columns <- names(merged_variable)[
+        vapply(merged_variable, is.matrix, logical(1))
+      ]
+
+      for (matrix_column in matrix_columns) {
+        expanded_column <- as.data.frame(merged_variable[, matrix_column])
+        names(expanded_column) <- paste0(
+          names(expanded_column),
+          "--",
+          matrix_column
+        )
+
+        merged_variable[[matrix_column]] <- NULL
+        merged_variable <- cbind(merged_variable, expanded_column)
       }
+    }
 
-      names(version_list) <- paste0(envar,"-",ts_versions)
+    environmental_superlist[[variable_name]] <- merged_variable
+  }
 
-      version_list <- lapply(version_list, function(v){
-        v[,names(v)!="h3_cell"]
+  # ---------------------------------------------------------------------------
+  # 5. Build the H3 environmental tables
+  # ---------------------------------------------------------------------------
+
+  envs_raster <- list()
+  envs_h3 <- list()
+
+  for (variable_name in names(environmental_superlist)) {
+    variable_data <- environmental_superlist[[variable_name]]
+
+    raster_columns <- grep(
+      "_raster$",
+      names(variable_data),
+      value = TRUE
+    )
+
+    raster_df <- variable_data[
+      ,
+      c("x", "y", raster_columns),
+      drop = FALSE
+    ]
+    names(raster_df) <- gsub("_raster$", "", names(raster_df))
+    envs_raster[[variable_name]] <- raster_df
+
+    h3_columns <- grep(
+      "_h3$",
+      names(variable_data),
+      value = TRUE
+    )
+
+    h3_df <- variable_data[
+      ,
+      c("h3_cell", h3_columns),
+      drop = FALSE
+    ]
+    h3_df <- h3_df[!duplicated(h3_df$h3_cell), , drop = FALSE]
+
+    # Keep only H3 cells that contain habitat in at least one timestep. This is
+    # the same permanent domain used by h3_cell_dictionary.csv.
+    h3_df <- h3_df[
+      as.character(h3_df$h3_cell) %in% h3_ids,
+      ,
+      drop = FALSE
+    ]
+
+    # Put every environmental table into permanent numeric-ID order.
+    h3_df <- h3_df[
+      match(h3_ids, as.character(h3_df$h3_cell)),
+      ,
+      drop = FALSE
+    ]
+
+    names(h3_df) <- gsub("_h3$", "", names(h3_df))
+
+    h3_coordinates <- h3jsr::cell_to_point(h3_df$h3_cell) |>
+      sf::st_coordinates() |>
+      as.data.frame()
+
+    names(h3_coordinates)[1:2] <- c("x", "y")
+    h3_df <- cbind(h3_coordinates, h3_df)
+
+    # CHANGED: assign the permanent numeric ID rather than the H3 string or a
+    # representative raster ID. The H3 string remains recoverable through
+    # h3_cell_dictionary.csv.
+    rownames(h3_df) <- unname(h3_to_cell_id[h3_df$h3_cell])
+
+    if (ncol(h3_df) != n_ts + 3) {
+      variable_columns <- setdiff(
+        names(h3_df),
+        c("x", "y", "h3_cell")
+      )
+      versions <- unique(sub("--.*", "", variable_columns))
+
+      version_list <- lapply(versions, function(version_name) {
+        version_columns <- grep(
+          paste0("^", version_name, "--"),
+          names(h3_df),
+          value = TRUE
+        )
+
+        version_df <- h3_df[
+          ,
+          c("x", "y", "h3_cell", version_columns),
+          drop = FALSE
+        ]
+
+        names(version_df)[-(1:3)] <- sub(
+          paste0("^", version_name, "--"),
+          "",
+          names(version_df)[-(1:3)]
+        )
+
+        rownames(version_df) <- unname(
+          h3_to_cell_id[version_df$h3_cell]
+        )
+        version_df$h3_cell <- NULL
+        version_df
       })
 
+      names(version_list) <- paste0(variable_name, "-", versions)
       envs_h3 <- append(envs_h3, version_list)
     } else {
-      if (verbose > 2 & envar == names(envar_superlist[1])) {
-        plot(terra::rast(raster_df[,c("x","y",t_s)], type = "xyz"), main=paste("Raster in",t_s))
-
-        h3jsr::cell_to_polygon(na.omit(h3_df[,c("h3_cell",t_s)])$h3_cell) |>
-          plot(main = paste("H3 cells in", t_s))
-      }
-
-      h3_df <- h3_df[,c(!names(h3_df)%in%c("h3_cell"))]
-
-      l <- list(h3_df)
-      names(l) <- envar
-      envs_h3 <- append(envs_h3, l)
+      rownames(h3_df) <- unname(h3_to_cell_id[h3_df$h3_cell])
+      h3_df$h3_cell <- NULL
+      envs_h3[[variable_name]] <- h3_df
     }
   }
 
-  # saves the original raster envs for comparision
+
+  # Validate that all environmental variables use the same permanent site IDs.
+  expected_cell_ids <- h3_cell_dictionary$cell_id
+  env_id_ok <- vapply(
+    envs_h3,
+    function(environment) {
+      identical(rownames(environment), expected_cell_ids)
+    },
+    logical(1)
+  )
+
+  if (!all(env_id_ok)) {
+    stop(
+      "Converted H3 environmental tables do not share the permanent ",
+      "numeric cell-ID ordering."
+    )
+  }
+
   if (reports) {
-    envs_raster <- lapply(envs_raster, function(x){
+    envs_raster <- lapply(envs_raster, function(x) {
       x$raster_cell_idx <- rownames(x)
       x
     })
 
-    saveRDS(envs_raster, file.path(report_path,"envs_raster.rds"))
+    saveRDS(
+      envs_raster,
+      file.path(report_path, "envs_raster.rds")
+    )
   }
 
-  # garbage colector to save ram
-  rm(vari_df, envar_superlist, envs_raster)
+  rm(environmental_superlist, envs_raster)
   gc()
 
-  # calculate the conversion error based on centroids distance
-  h3_centroids <- h3jsr::cell_to_point(h3_cell_idx) |>
+  # ---------------------------------------------------------------------------
+  # 6. Report raster-to-H3 centroid displacement
+  # ---------------------------------------------------------------------------
+
+  point_h3_centroids <- h3jsr::cell_to_point(h3_cell_idx) |>
     sf::st_coordinates()
 
-  error_m <- c()
-  for (i in 1:nrow(h3_centroids)) {
-    distance <- geosphere::distGeo(h3_centroids[i,], all_pts[i,])
-    error_m[i] <- distance
-  }
+  conversion_error_m <- vapply(
+    seq_len(nrow(point_h3_centroids)),
+    function(i) {
+      geosphere::distGeo(
+        point_h3_centroids[i, ],
+        all_pts_4326_xy[i, ]
+      )
+    },
+    numeric(1)
+  )
 
-  if (verbose>1){
-    hist(error_m/1000, main="Error in Km")
+  if (verbose > 1) {
+    graphics::hist(
+      conversion_error_m / 1000,
+      main = "Raster point to H3 centroid error (km)"
+    )
   }
 
   if (reports) {
-    temp_df <- cbind(all_pts,h3_centroids,error_m)
-    colnames(temp_df) <- c("raster_x","raster_y","h3_x","h3_y","error_m")
+    conversion_error <- cbind(
+      as.data.frame(all_pts_4326_xy),
+      as.data.frame(point_h3_centroids),
+      error_m = conversion_error_m
+    )
 
-    utils::write.csv(temp_df, file.path(report_path,"conversion_error.txt"),row.names = FALSE)
+    names(conversion_error) <- c(
+      "raster_lon",
+      "raster_lat",
+      "h3_lon",
+      "h3_lat",
+      "error_m"
+    )
+
+    utils::write.csv(
+      conversion_error,
+      file.path(report_path, "conversion_error.txt"),
+      row.names = FALSE
+    )
   }
 
-  # gc to save ram
-  rm(h3_df, raster_df)
-  gc()
+  # ---------------------------------------------------------------------------
+  # 7. Convert each raster distance matrix
+  # ---------------------------------------------------------------------------
 
-  # Loop over timesteps to update distance matrix
-  for (ti in 1:n_ts){
-    # ti <- 1
-    num_ts <- (n_ts-1):0
-    if(verbose>0){
-      cat("--\n")
-      cat(paste(ti,"of ", n_ts, "time_steps:", time_steps[ti],"\n"))
-    }
+  representative_log <- list()
 
-    # load distances and manipulate it...
-    # if geodynamic is true or geo is false and ti is 1
-    if (compute_distances & (o_gls_all$meta$geodynamic | (!o_gls_all$meta$geodynamic&ti==1))){
-      if (o_gls_all$meta$geodynamic){
-        tiis <- rev(o_cd_fl)[ti]
-      }else{
-        tiis <- "distances_full_0.rds"
+  if (compute_distances) {
+    for (ti in seq_len(n_ts)) {
+      if (
+        !isTRUE(source_space$meta$geodynamic) &&
+        ti > 1
+      ) {
+        next
       }
-      # lfd_ti = landscapes full distances at ti
-      lfd_ti <- readRDS(file.path(dir_input, "distances_full", tiis))
-      cat(paste("Loaded:", rev(o_cd_fl)[ti],"\n"))
 
-      new_cost_dist_full <- lfd_ti[row.names(lfd_ti) %in% row.names(envs_h3[[1]]), colnames(lfd_ti) %in% row.names(envs_h3[[1]])]
+      if (isTRUE(source_space$meta$geodynamic)) {
+        distance_file <- rev(distance_files)[ti]
+      } else {
+        distance_file <- "distances_full_0.rds"
+      }
 
-      # save cost function ti
-      saveRDS(new_cost_dist_full, file.path(dir_output, "distances_full", tiis))
-      if (verbose>0){
-        cat(paste("Saved:", file.path(dir_output, "distances_full", tiis),"\n"))
+      if (verbose > 0) {
+        cat(
+          "--\n",
+          ti,
+          "of",
+          n_ts,
+          "timesteps:",
+          time_steps[ti],
+          "\n"
+        )
+      }
+
+      source_distance <- readRDS(
+        file.path(
+          dir_input,
+          "distances_full",
+          distance_file
+        )
+      )
+
+      if (is.null(rownames(source_distance)) ||
+          is.null(colnames(source_distance))) {
+        stop(
+          "Distance matrix has no row/column names: ",
+          distance_file
+        )
+      }
+
+      available_raster_ids <- intersect(
+        rownames(source_distance),
+        colnames(source_distance)
+      )
+
+      # CHANGED: derive the distance-matrix domain from actual H3 habitat at
+      # this timestep, but retain the permanent numeric IDs assigned above.
+      time_name <- time_steps[ti]
+
+      if (!time_name %in% names(envs_h3[[1]])) {
+        stop("Environmental timestep not found: ", time_name)
+      }
+
+      active_cell_ids <- rownames(envs_h3[[1]])[
+        !is.na(envs_h3[[1]][[time_name]])
+      ]
+
+      active_h3 <- unname(cell_id_to_h3[active_cell_ids])
+
+      # Select the closest member of each active H3 cell that is actually
+      # available in the original raster distance matrix for this timestep.
+      representatives <- vapply(
+        active_h3,
+        function(h3_id) {
+          ranked_candidates <- h3_representative_rank[[h3_id]]
+          available_candidates <- ranked_candidates[
+            ranked_candidates %in% available_raster_ids
+          ]
+
+          if (!length(available_candidates)) {
+            stop(
+              "H3 habitat cell ", h3_id,
+              " (static cell ID ", h3_to_cell_id[[h3_id]], ") has no ",
+              "source raster cell in ", distance_file
+            )
+          }
+
+          available_candidates[1]
+        },
+        character(1)
+      )
+
+      # Explicit indexing preserves the environment-table order.
+      converted_distance <- source_distance[
+        representatives,
+        representatives,
+        drop = FALSE
+      ]
+
+      # Rename rows and columns to the permanent numeric site IDs. These names
+      # are identical to the corresponding environment and coordinate row names.
+      rownames(converted_distance) <- active_cell_ids
+      colnames(converted_distance) <- active_cell_ids
+
+      if (!identical(rownames(converted_distance), active_cell_ids) ||
+          !identical(colnames(converted_distance), active_cell_ids)) {
+        stop(
+          "Converted distance matrix IDs do not match environmental habitat ",
+          "IDs for timestep ", time_name
+        )
+      }
+
+      saveRDS(
+        converted_distance,
+        file.path(
+          dir_output,
+          "distances_full",
+          distance_file
+        )
+      )
+
+      representative_log[[distance_file]] <- data.frame(
+        timestep = time_name,
+        distance_file = distance_file,
+        cell_id = active_cell_ids,
+        h3_cell = active_h3,
+        raster_cell = unname(representatives),
+        stringsAsFactors = FALSE
+      )
+
+      if (verbose > 0) {
+        cat(
+          "Saved:",
+          file.path(
+            dir_output,
+            "distances_full",
+            distance_file
+          ),
+          "\n"
+        )
       }
     }
   }
 
-  # save final landscape
-  final_space <- o_gls_all # copy old landscape as ref.
+  if (reports && length(representative_log)) {
+    utils::write.csv(
+      do.call(rbind, representative_log),
+      file.path(
+        report_path,
+        "representative_cells_by_timestep.txt"
+      ),
+      row.names = FALSE
+    )
+  }
+
+  # ---------------------------------------------------------------------------
+  # 8. Save the final H3 space
+  # ---------------------------------------------------------------------------
+
+  final_space <- source_space
   final_space$env <- envs_h3
   final_space$meta$type <- "h3"
-  final_space$meta$type_spec <- list("res"=res)
-  final_space$meta$area$total_area <- sum(h3jsr::cell_area(h3_fill, final_space$area$unit, simple=TRUE))
-  final_space$meta$area$n_sites <- as.numeric(length(unique(h3_cell_idx)))
-  saveRDS(final_space, file.path(dir_output, "spaces.rds"))
-  return(cat("Space converted to h3 and saved to [", dir_output,"]","\n"))
+  final_space$meta$type_spec <- list(
+    res = res,
+    site_id = "numeric",
+    h3_dictionary = "h3_cell_dictionary.csv"
+  )
+
+  # H3 cell centroids are returned in longitude/latitude. Keep metadata and
+  # coordinates in the same CRS and recalculate the extent accordingly.
+  final_space$meta$crs <- "EPSG:4326"
+  final_space$meta$area$extent <- c(
+    xmin = min(h3_cell_dictionary$x),
+    xmax = max(h3_cell_dictionary$x),
+    ymin = min(h3_cell_dictionary$y),
+    ymax = max(h3_cell_dictionary$y)
+  )
+
+  # Metadata describes the permanent H3 domain. Habitat availability through
+  # time remains represented by NA values in the environmental tables.
+  final_space$meta$area$total_area <- sum(
+    h3jsr::cell_area(
+      h3_ids,
+      final_space$meta$area$unit,
+      simple = TRUE
+    )
+  )
+  final_space$meta$area$n_sites <- length(h3_ids)
+
+  saveRDS(
+    final_space,
+    file.path(dir_output, "spaces.rds")
+  )
+
+  if (verbose > 0) {
+    cat(
+      "Space converted to H3 and saved to [",
+      dir_output,
+      "]\n"
+    )
+  }
+
+  invisible(dir_output)
 }
+
 
 #' Do local conversion of a space.rds type h3 to type points locally or not
 #'
