@@ -293,20 +293,20 @@ space_raster_to_h3 <- function(
     h3_cell_dictionary$cell_id
   )
 
-  # Save the permanent lookup regardless of reports. It is required to convert
-  # model output back to real H3 indexes.
-  utils::write.csv(
-    h3_cell_dictionary,
-    file.path(dir_output, "h3_cell_dictionary.csv"),
-    row.names = FALSE
-  )
-
   # Keep every raster member of each H3 cell. Representatives are selected from
   # these candidates separately for every distance timestep.
   h3_cell_members <- split(raster_ids, as.character(h3_cell_idx))
   h3_cell_members <- h3_cell_members[h3_ids]
 
   if (reports) {
+    # Save the permanent lookup. It is required to convert model output back
+    # to real H3 indexes (although coordinates can also be used).
+    utils::write.csv(
+      h3_cell_dictionary,
+      file.path(report_path, "h3_cell_dictionary.csv"),
+      row.names = FALSE
+    )
+
     raster_h3_dictionary <- do.call(
       rbind,
       lapply(h3_ids, function(h3_id) {
@@ -333,7 +333,6 @@ space_raster_to_h3 <- function(
   h3_centroids <- h3_coordinates
   rownames(h3_centroids) <- h3_ids
 
-  # CHANGED:
   # The original function compared WGS84 H3 centroids with all_pts in the
   # source CRS. Here both coordinate sets are explicitly in EPSG:4326.
   #
@@ -547,7 +546,7 @@ space_raster_to_h3 <- function(
     names(h3_coordinates)[1:2] <- c("x", "y")
     h3_df <- cbind(h3_coordinates, h3_df)
 
-    # CHANGED: assign the permanent numeric ID rather than the H3 string or a
+    # Assign the permanent numeric ID rather than the H3 string or a
     # representative raster ID. The H3 string remains recoverable through
     # h3_cell_dictionary.csv.
     rownames(h3_df) <- unname(h3_to_cell_id[h3_df$h3_cell])
@@ -728,7 +727,7 @@ space_raster_to_h3 <- function(
         colnames(source_distance)
       )
 
-      # CHANGED: derive the distance-matrix domain from actual H3 habitat at
+      # Derive the distance-matrix domain from actual H3 habitat at
       # this timestep, but retain the permanent numeric IDs assigned above.
       time_name <- time_steps[ti]
 
@@ -837,8 +836,8 @@ space_raster_to_h3 <- function(
   final_space$meta$type <- "h3"
   final_space$meta$type_spec <- list(
     res = res,
-    site_id = "numeric",
-    h3_dictionary = "h3_cell_dictionary.csv"
+    # site_id = "numeric",
+    # h3_dictionary = "h3_cell_dictionary.csv"
   )
 
   # H3 cell centroids are returned in longitude/latitude. Keep metadata and
