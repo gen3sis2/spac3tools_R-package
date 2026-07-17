@@ -835,9 +835,7 @@ space_raster_to_h3 <- function(
   final_space$env <- envs_h3
   final_space$meta$type <- "h3"
   final_space$meta$type_spec <- list(
-    res = res,
-    # site_id = "numeric",
-    # h3_dictionary = "h3_cell_dictionary.csv"
+    res = res
   )
 
   # H3 cell centroids are returned in longitude/latitude. Keep metadata and
