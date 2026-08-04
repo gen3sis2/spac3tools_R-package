@@ -12,19 +12,17 @@
 #' Decompress a compressed gen3sis2 space object
 #'
 #' This function takes a `spaces.rds` file (compressed gen3sis2 format), reconstructs the
-#' full costs distances, ready for simulation and saves it to the specified output directory.
-#' Useful for taking compressed environmental reconstructions and reproducing or reruning experiments
+#' simulation-ready full costs distances, and saves them to the specified output directory.
+#' This functions primary use is undoing the compact storage of distances in the `spaces.rds` object.
 #'
-#' @param dir_input the input directory containing the gen3sis2 space.rds
-#' @param cost_function_index the index of the cost function to be used and as provided
+#' @param dir_input The input directory containing the gen3sis2 spaces.rds
+#' @param cost_function_index The index of the cost function to be used and as provided
 #' at spaces.rds at meta$cost_function. Default is the first cost function.
 #' Default is the declared cost_functions list at cost_lists
 #' Note that different const_functions can be used and it's computation
 #' depends only on gen3sis::create_input_landscape function
-#' @param dir_output output directory to save output. Default: dir_output=NULL
-#'  is to creates a temporary directory and print it.
-#' @param remove_temp_rasters boolean. If FALSE, delete temporary folder and files,
-#' i.e. temporary raster brinks inside directory temp_rasters
+#' @param dir_output Output directory.
+#' @param remove_temp_rasters Boolean. If TRUE, delete temporary environment tif folder and files.
 #'
 #' @return passing confirmation statement
 #' @export
@@ -39,7 +37,6 @@ decompress_space <- function(dir_input=NULL,
 
   if (is.null(dir_output)){
     stop("Please provide an output directory for the recreated landscape")
-    dir_output <- tempdir()
   }
 
   cat(paste0("Using output directory: [", dir_output, "]"))
@@ -69,9 +66,9 @@ decompress_space <- function(dir_input=NULL,
 
   # create temp rasters
   for (var_i in names(ls)){
-    rstack <- NULL
+    rstack <- list()
     for (c_i in 3:ncol(ls[[var_i]])){
-      rstack[[c_i-2]] <- terra::rast(ls[[var_i]][,c(1,2,c_i)], type="xyz")
+      rstack <- c(rstack, terra::rast(ls[[var_i]][,c(1,2,c_i)], type="xyz"))
     }
     rstack <- terra::rast(rstack)
 
@@ -87,14 +84,13 @@ decompress_space <- function(dir_input=NULL,
   }
   print(paste("Temporary Raster Bricks Saved to: ", dir_temp_raster))
   # load raster bricks
-  #list all temp raster bricks ending with .grd
+  # list all raster bricks ending with .tif
   bf <- paste0(names(ls), ".tif")
   print(paste("Raster Bricks are: ", paste(bf, collapse = "; ")))
-  #load all temp raster bricks
 
-  b <- NULL
-  for (i in 1:length(bf)){
-    #b[[i]] <- raster::brick(file.path(dir_temp_raster, bf[i]))
+  # load all temp raster bricks
+  b <- vector(mode = "list", length = length(bf))
+  for (i in seq_along(bf)){
     b[[i]] <- terra::rast(file.path(dir_temp_raster, bf[i]))
   }
   #prepare list
@@ -105,8 +101,7 @@ decompress_space <- function(dir_input=NULL,
       lsn[[i]] <- c(lsn[[i]], b[[i]][[il]])
     }
   }
-    # myt <- (as.numeric(colnames(ls[[1]][-c(1,2)])))/timestoMa
-  # string_time_step <- paste0(formatC(round(myt,2), width=5, flag="0", digits=2, format="f"),"Ma" )
+
   gsd <- gen3sis_space$meta$duration
   gen3sis2::create_spaces_raster(raster_list = lsn,
                                  cost_function = ifelse(cost_function_index == 0, gen3sis_space$meta$cost_function, gen3sis_space$meta$cost_function[[cost_function_index]]),
@@ -147,43 +142,11 @@ decompress_space <- function(dir_input=NULL,
 #' @name compress_space
 #' @param dir_input Directory containing the `spaces.rds` to compress.
 #' @param dir_output Directory where the compressed version will be saved.
-#' If `NULL`, a temporary directory is used.
 #'
 #' @return Saves a compressed `spaces.rds` file to `dir_output`. Does not return an R object.
 #' @export
 #'
 #' @example inst/examples/compress_space_help.R
-source("./R/cost_functions.R")
-
-# depracated: refers to landscapes.rds from gen3sis
-# compress_space <- function(dir_input=NULL,
-#                            dir_output=NULL){
-#
-#   gen3sis2:::prepare_dirs(dir_input, dir_output)
-#
-#
-#   if (is.null(dir_output)){
-#     # error("Please provide an output directory for the recreated landscape")
-#     dir_output <- tempdir()
-#   }
-#
-#   cat(paste0("Using output directory: [", dir_output, "]"))
-#
-#   space_file_loc <- file.path(dir_input,"landscapes.rds")
-#   if (file.exists(space_file_loc)){
-#     print(paste0("[OK] landscapes.rds found: [", space_file_loc, "]"))
-#   } else{
-#     stop(paste0("[MISSING] landscapes.rds was not found: [", space_file_loc, "]"))
-#   }
-#
-#   gen3sis_space=readRDS(space_file_loc)
-#
-#   if (is.null(gen3sis_space)){
-#     stop("Please provide a loaded gen3sis landscapes.rds as gen3sis_space")
-#   }
-#   saveRDS(gen3sis_space, file.path(dir_output, "landscapes.rds"), compress=T)
-#
-# } #, timestoMa=6
 
 compress_space <- function(dir_input=NULL,
                            dir_output=NULL){
@@ -192,8 +155,7 @@ compress_space <- function(dir_input=NULL,
 
 
   if (is.null(dir_output)){
-    # error("Please provide an output directory for the recreated landscape")
-    dir_output <- tempdir()
+    stop("Please provide an output directory for the recreated landscape")
   }
 
   cat(paste0("Using output directory: [", dir_output, "]"))
@@ -212,4 +174,4 @@ compress_space <- function(dir_input=NULL,
   }
   saveRDS(gen3sis_space, file.path(dir_output, "spaces.rds"), compress=T)
 
-} #, timestoMa=6
+}
