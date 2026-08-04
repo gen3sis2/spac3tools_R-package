@@ -95,6 +95,7 @@ decompress_space <- function(dir_input=NULL,
   }
   # prepare list
   lsn <- vector(mode = "list", length = length(ls))
+  lsn <- setNames(lsn, names(ls))
   # attribute to list
   for (i in 1:length(lsn)){
     for (j in seq(terra::nlyr(b[[i]]))) {
