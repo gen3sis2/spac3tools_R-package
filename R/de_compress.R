@@ -110,7 +110,6 @@ decompress_space <- function(dir_input=NULL,
                                  duration = gsd, gsd$unit, full_dists = T, geodynamic=gen3sis_space$meta$geodynamic,
                                 crs=gen3sis_space$meta$crs, verbose=T, overwrite_output = TRUE)
 
-  unlink(file.path(dir_output, "landscapes.rds"))
   saveRDS(gen3sis_space, file.path(dir_output, "spaces.rds"))
   print(paste0("spaces.rds moved to [", file.path(dir_output, "spaces.rds"), "]"))
 
