@@ -63,29 +63,32 @@ decompress_space <- function(dir_input=NULL,
 
   # create raster bricks
 
-  # od <- dir_output
   dir.create(dir_output, showWarnings = FALSE)
   # create temp dir for temp rasters
   dir.create(dir_temp_raster, showWarnings = FALSE)
 
   # create temp rasters
   for (var_i in names(ls)){
-    # var_i <- names(ls)[1]
     rstack <- NULL
     for (c_i in 3:ncol(ls[[var_i]])){
-      # c_i <- 4
-      # rstack[[c_i-2]] <- raster::rasterFromXYZ(ls[[var_i]][,c(1,2,c_i)])
       rstack[[c_i-2]] <- terra::rast(ls[[var_i]][,c(1,2,c_i)], type="xyz")
     }
     rstack <- terra::rast(rstack)
-                #raster::brick(rstack)
-    terra::writeRaster(rstack, filename = file.path(dir_temp_raster, paste0(var_i, ".grd")), overwrite=TRUE)
+
+    terra::writeRaster(
+      rstack,
+      filename = file.path(
+        dir_temp_raster,
+        paste0(var_i, ".tif")
+      ),
+      filetype = "GTiff",
+      overwrite = TRUE
+    )
   }
   print(paste("Temporary Raster Bricks Saved to: ", dir_temp_raster))
   # load raster bricks
   #list all temp raster bricks ending with .grd
-  #bf <- list.files(dir_temp_raster, pattern=".grd$")
-  bf <- paste0(names(ls), ".grd")
+  bf <- paste0(names(ls), ".tif")
   print(paste("Raster Bricks are: ", paste(bf, collapse = "; ")))
   #load all temp raster bricks
 
