@@ -93,12 +93,12 @@ decompress_space <- function(dir_input=NULL,
   for (i in seq_along(bf)){
     b[[i]] <- terra::rast(file.path(dir_temp_raster, bf[i]))
   }
-  #prepare list
-  lsn <- lapply(ls, function(x){x <- NULL})
-  #attribute to list
+  # prepare list
+  lsn <- vector(mode = "list", length = length(ls))
+  # attribute to list
   for (i in 1:length(lsn)){
-    for (il in 1:dim(b[[i]])[3]) {
-      lsn[[i]] <- c(lsn[[i]], b[[i]][[il]])
+    for (j in seq(terra::nlyr(b[[i]]))) {
+      lsn[[i]] <- c(lsn[[i]], b[[i]][[j]])
     }
   }
 
@@ -119,18 +119,6 @@ decompress_space <- function(dir_input=NULL,
     print(paste(dir_temp_raster, "removed sucessfully"))
   }
 
-  # metadata_file_loc <- file.path(dir_input,"METADATA.txt")
-  # if (file.exists(metadata_file_loc)){
-  #   print(paste0("[OK] METADATA.txt found! [", metadata_file_loc, "]"))
-  #   # update metadata.txt NOTE: This might demand manual changes
-  #   file.copy(metadata_file_loc,
-  #             file.path(dir_output, basename(dir_input), "METADATA.txt"),
-  #             overwrite=TRUE)
-  #   print("Metadata.tx moved. Please update METADATA.txt properly!")
-  #
-  # } else {
-  #   warning(paste0("[MISSING] METADATA.txt is missing! \n Create METADATA.txt manually \n at [", metadata_file_loc, "]"))
-  # }
   return(paste0("Space decompressed sucessfully to [", dir_output,"]" ))
 }
 
