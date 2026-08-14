@@ -20,7 +20,7 @@
 #' at spaces.rds at meta$cost_function. Default is the first cost function.
 #' Default is the declared cost_functions list at cost_lists
 #' Note that different const_functions can be used and it's computation
-#' depends only on gen3sis::create_input_landscape function
+#' depends only on gen3sis::create_spaces_raster function
 #' @param dir_output Output directory.
 #' @param remove_temp_rasters Boolean. If TRUE, delete temporary environment tif folder and files.
 #'
@@ -52,7 +52,7 @@ decompress_space <- function(dir_input=NULL,
   ls <- gen3sis_space$env
 
   if (is.null(gen3sis_space)){
-    stop("Please provide a loaded gen3sis landscape.rds as gen3sis_space")
+    stop("Please provide a loaded gen3sis spaces.rds as gen3sis_space")
   }
 
   # create temp dir
@@ -143,7 +143,7 @@ compress_space <- function(dir_input=NULL,
 
 
   if (is.null(dir_output)){
-    stop("Please provide an output directory for the recreated landscape")
+    stop("Please provide an output directory for the recreated space")
   }
 
   cat(paste0("Using output directory: [", dir_output, "]"))
