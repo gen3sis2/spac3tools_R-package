@@ -80,11 +80,11 @@ landscape_to_space <- function(dir_input=NA,
   # check if the cost-function is supplied as list or as a function
   if(inherits(cost_function, "list")){
     all_func <- all(sapply(cost_function, function(x) inherits(x, "function")))
-    if(!all_func) stop("Supply either a list of cost functions or a cost function!")
+    if(!all_func) stop("Not all elements of the list of cost functions are functions !")
   }else if(inherits(cost_function, "function")){
     cost_function <- list(cost_function)
   }else{
-    stop("Supply either a list of cost functions or a cost function!")
+    stop("The element supplied as cost_function is not a function!")
   }
 
   gen3sis2:::prepare_dirs(dir_input, dir_output)
