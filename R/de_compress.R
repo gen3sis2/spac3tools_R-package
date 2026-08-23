@@ -43,23 +43,17 @@ decompress_space <- function(dir_input=NULL,
 
   space_file_loc <- file.path(dir_input,"spaces.rds")
   if (file.exists(space_file_loc)){
-    print(paste0("[OK] spaces.rds found: [", space_file_loc, "]"))
+    cat(paste0('[OK] spaces.rds found: "', space_file_loc, '"'))
   } else{
-    stop(paste0("[MISSING] spaces.rds was not found: [", space_file_loc, "]"))
+    stop(paste0('[MISSING] spaces.rds was not found: "', space_file_loc, '"'))
   }
 
   gen3sis_space=readRDS(space_file_loc)
   ls <- gen3sis_space$env
 
-  if (is.null(gen3sis_space)){
-    stop("Please provide a loaded gen3sis spaces.rds as gen3sis_space")
-  }
-
   # create temp dir
   dir_temp_raster=file.path(dir_output, "temp_rasters")
-
   # create raster bricks
-
   dir.create(dir_output, showWarnings = FALSE)
   # create temp dir for temp rasters
   dir.create(dir_temp_raster, showWarnings = FALSE)
