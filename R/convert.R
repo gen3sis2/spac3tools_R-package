@@ -80,9 +80,9 @@ landscape_to_space <- function(dir_input=NA,
   gen3sis2:::prepare_dirs(dir_input, dir_output)
   landscape_file_loc <- file.path(dir_input,"landscapes.rds")
   if (file.exists(landscape_file_loc)){
-    print(paste0("[OK] landscapes.rds found: [", landscape_file_loc, "]"))
+    print(paste0('[OK] landscapes.rds found:  "', landscape_file_loc, '"'))
   } else{
-    stop(paste0("[MISSING] landscapes.rds was not found: [", landscape_file_loc, "]"))
+    stop(paste0('[MISSING] landscapes.rds was not found: "', landscape_file_loc, '"'))
   }
   lc <- readRDS(landscape_file_loc)
   # create order flipped to match old landscape object order
@@ -116,7 +116,7 @@ landscape_to_space <- function(dir_input=NA,
                      )
   gen3sis2::check_spaces(gs)
   saveRDS(gs, file.path(dir_output, "spaces.rds"), compress=T)
-  print(paste0("space.rds type=", gs$type , " saved to [", file.path(dir_output, "spaces.rds"), "]"))
+  print(paste0('space.rds type=', gs$type , ' saved to: "', file.path(dir_output, "spaces.rds"), '"'))
 }
 
 
@@ -482,7 +482,7 @@ space_raster_to_h3 <- function(dir_input,
   final_space$meta$area$total_area <- sum(h3jsr::cell_area(h3_fill, final_space$area$unit, simple=TRUE))
   final_space$meta$area$n_sites <- as.numeric(length(unique(h3_cell_idx)))
   saveRDS(final_space, file.path(dir_output, "spaces.rds"))
-  return(cat("Space converted to h3 and saved to [", dir_output,"]","\n"))
+  return(cat('Space converted to h3 and saved to: "', dir_output,'"',"\n"))
 }
 
 #' Do local conversion of a space.rds type h3 to type points locally or not

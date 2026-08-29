@@ -42,13 +42,13 @@ decompress_space <- function(dir_input=NULL,
     dir_output <- tempdir()
   }
 
-  cat(paste0("Using output directory: [", dir_output, "]"))
+  cat(paste0('Using output directory: "', dir_output, '""'))
 
   space_file_loc <- file.path(dir_input,"spaces.rds")
   if (file.exists(space_file_loc)){
-    print(paste0("[OK] spaces.rds found: [", space_file_loc, "]"))
+    cat(paste0('[OK] spaces.rds found: "', space_file_loc, '"'))
   } else{
-    stop(paste0("[MISSING] spaces.rds was not found: [", space_file_loc, "]"))
+    stop(paste0('[MISSING] spaces.rds was not found: "', space_file_loc, '"'))
   }
 
   gen3sis_space=readRDS(space_file_loc)
@@ -113,7 +113,7 @@ decompress_space <- function(dir_input=NULL,
 
   unlink(file.path(dir_output, "landscapes.rds"))
   saveRDS(gen3sis_space, file.path(dir_output, "spaces.rds"))
-  print(paste0("spaces.rds moved to [", file.path(dir_output, "spaces.rds"), "]"))
+  print(paste0('spaces.rds moved to: "', file.path(dir_output, "spaces.rds"), '"'))
 
   # remove temp raster in case remove_temp_rasters is TRUE
   if (remove_temp_rasters){
@@ -133,7 +133,7 @@ decompress_space <- function(dir_input=NULL,
   # } else {
   #   warning(paste0("[MISSING] METADATA.txt is missing! \n Create METADATA.txt manually \n at [", metadata_file_loc, "]"))
   # }
-  return(paste0("Space decompressed sucessfully to [", dir_output,"]" ))
+  return(paste0('Space decompressed sucessfully to: "', dir_output,'"' ))
 }
 
 #' Compress a gen3sis2 Space object by removing cost distances
