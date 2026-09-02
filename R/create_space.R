@@ -435,11 +435,12 @@ get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
 ################################################################################
 # create_spaces_icosa <- function(){}
 
-#' Creates a list of icosa data.frames
+#' Creates a list of icosa-based data.frames
 #'
 #' @param icosa (\code{trigrid} or \code{hexagrid}) An icosahedral grid.
-#' @param cells character. A vector of icosa face IDs.
+#' @param cells character. A vector of icosa face IDs to which the output is limited.
 #' @param raster_list list of named list(s) of raster(s) or raster file(s) name(s). Starting from the past towards the present.
+#' @param ... Arguments passed to \code{icosa::resample} - ADD LINK LATER
 #' NOTE: the list names are important since these are the environmental names
 #'
 #' @returns A named list of data frames. Each data frame corresponds to one
@@ -452,13 +453,15 @@ get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
 #'
 #'
 #' @export
-#' @example inst/examples/create_spaces_h3_help.R
+#' @example inst/examples/create_spaces_icosa_help.R
 data_raster_to_icosa <- function(
     icosa ,
     cells = NULL,
     raster_list, ...){
-	# ensure package presence
-	if(!requireNamespace(icosa, quietly=TRUE)) stop("This function requires the 'icosa' extension.")
+	# ensure package presence - check for no import, but suggests!
+	if(!requireNamespace("icosa", quietly=TRUE)) stop("This function requires the 'icosa' extension.")
+	if(!requireNamespace("terra", quietly=TRUE)) stop("This function requires the 'terra' extension.")
+
 	# access cell centers
 	cent <- icosa::centers(icosa)
 	if(!is.null(cells)) if(!all(cells%in%rownames(cent))) stop("The provided cell IDs mismatch the grid object.")
@@ -469,20 +472,30 @@ data_raster_to_icosa <- function(
 		# the current raster
 		ras <- raster_list[[v]]
 
+		# create matrix tos tores results
+		nTerraLayers <-  terra::nlyr(ras)
+		resampled_variable <- matrix(NA, ncol=nTerraLayers, nrow=nrow(cent))
+		rownames(resampled_variable) <- rownames(cent)
+
 		# resample to icosahedral grid (default method is slow) and not yet iterated
-		for(i in 1:nlyr(ras)){
-			resvals <- resample(ras[[i]], icosa)
+		for(i in 1:nTerraLayers){
+			 resampled_one <- icosa::resample(ras[[i]], icosa, ...)
+			# resampled_one <- icosa::resample(ras[[i]], icosa)
+			resampled_variable[names(resampled_one),i] <- resampled_one
 		}
-		val_df<- data.frame(names(resvals), vals=resvals, cent)
-		colnames(val_df)[(ncol(val_df)-1):ncol(val_df)] <- c("x", "y")
+		# subset these to a given set
+		if(!is.null(cells)) resampled_variable <- resampled_variable[cells, ]
+
+		# cast as a data frame, add additional stuff
+		val_df<- data.frame(rownames(resampled_variable), vals=resampled_variable, cent)
+		colnames(val_df) <- c("icosa_face", names(raster_list[[v]]),"x", "y")
 		val_df
 	})
 
+	# reuse names of data.frame
 	names(df_list) <- names(raster_list)
 
 	return(df_list)
 }
 
-# note: works with single-layer raster, need to work on mult
-# 
 

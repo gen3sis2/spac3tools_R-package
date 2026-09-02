@@ -3,6 +3,7 @@
 export(compress_space)
 export(create_spaces_h3)
 export(data_raster_to_h3)
+export(data_raster_to_icosa)
 export(decompress_space)
 export(landscape_to_space)
 export(space_h3_to_points)
