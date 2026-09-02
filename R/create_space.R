@@ -427,3 +427,62 @@ get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
   colnames(transition_matrix) <- 1:dim(space_stack)[1]
   return(transition_matrix)
 }
+
+
+
+################################################################################
+# Spaces for icosa::trigrid / icosa::hexagrid classes
+################################################################################
+# create_spaces_icosa <- function(){}
+
+#' Creates a list of icosa data.frames
+#'
+#' @param icosa (\code{trigrid} or \code{hexagrid}) An icosahedral grid.
+#' @param cells character. A vector of icosa face IDs.
+#' @param raster_list list of named list(s) of raster(s) or raster file(s) name(s). Starting from the past towards the present.
+#' NOTE: the list names are important since these are the environmental names
+#'
+#' @returns A named list of data frames. Each data frame corresponds to one
+#'   element of \code{raster_list} and contains:
+#'   \itemize{
+#'     \item the icosa cell identifier,
+#'     \item extracted raster values for each layer,
+#'     \item centroid coordinates (\code{x}, \code{y}).
+#'   }
+#'
+#'
+#' @export
+#' @example inst/examples/create_spaces_h3_help.R
+data_raster_to_icosa <- function(
+    icosa ,
+    cells = NULL,
+    raster_list, ...){
+	# ensure package presence
+	if(!requireNamespace(icosa, quietly=TRUE)) stop("This function requires the 'icosa' extension.")
+	# access cell centers
+	cent <- icosa::centers(icosa)
+	if(!is.null(cells)) if(!all(cells%in%rownames(cent))) stop("The provided cell IDs mismatch the grid object.")
+
+	# repeat for every raster
+	df_list <- lapply(names(raster_list), function(v){
+		names(raster_list[[v]]) <- paste0("ts_",1:terra::nlyr(raster_list[[v]]))
+		# the current raster
+		ras <- raster_list[[v]]
+
+		# resample to icosahedral grid (default method is slow) and not yet iterated
+		for(i in 1:nlyr(ras)){
+			resvals <- resample(ras[[i]], icosa)
+		}
+		val_df<- data.frame(names(resvals), vals=resvals, cent)
+		colnames(val_df)[(ncol(val_df)-1):ncol(val_df)] <- c("x", "y")
+		val_df
+	})
+
+	names(df_list) <- names(raster_list)
+
+	return(df_list)
+}
+
+# note: works with single-layer raster, need to work on mult
+# 
+
