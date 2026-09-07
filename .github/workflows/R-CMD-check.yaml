@@ -29,7 +29,7 @@ jobs:
         run: Rscript -e 'install.packages("terra")'
 
       - name: Install gen3sis2
-        run: Rscript -e 'remotes::install_github("ohagen/gen3sis_rf")'
+        run: Rscript -e 'remotes::install_github("gen3sis2/gen3sis2_R-package")'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
