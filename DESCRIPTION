@@ -12,7 +12,7 @@ Encoding: UTF-8
 LazyData: true
 Imports: gen3sis2, h3jsr, sf, geosphere, terra, Matrix, Rcpp, igraph
 Remotes:
-    github::gen3sis2/gen3sis2_R-package
+    gen3sis2=github::gen3sis2/gen3sis2_R-package
 Suggests: 
     testthat (>= 3.0.0),
     knitr,
