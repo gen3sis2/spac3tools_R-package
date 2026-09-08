@@ -3,7 +3,7 @@ title: "Creating a spaces.rds with H3 data"
 date: "`r format(Sys.time(),  '%d.%m.%Y')`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Converting gen3sis2 raster spaces to h3 and points}
+  %\VignetteIndexEntry{Creating a spaces.rds with H3 data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
