@@ -112,8 +112,7 @@ create_spaces_h3 <- function(
                                           n_sites=NA,
                                           unit="km2"),
                                 geodynamic=geodynamic,
-                                cost_function = list(cost_function),
-                                ...
+                                cost_function = list(cost_function)
   )
 
   # filling spaces
