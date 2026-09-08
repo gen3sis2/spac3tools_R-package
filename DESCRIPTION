@@ -10,7 +10,7 @@ Description: set of tools to create, converte, compress and decompress files con
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Imports: gen3sis2, h3jsr, sf, geosphere, terra, Matrix, Rcpp, igraph
+Imports: gen3sis2, h3jsr, sf, geosphere, terra, Matrix, methods, Rcpp, igraph
 Remotes:
     gen3sis2=github::gen3sis2/gen3sis2_R-package
 Suggests: 
