@@ -21,6 +21,7 @@
 #' @param duration list with from, to, by and unit. Default is from -latest time to zero by 1 Ma
 #' @param geodynamic True or False, if the space is dynamic (e.g. sea-level change) or static. Default is NULL,
 #' i.e. deciding final value based on the input data using \code{?is_geodynamic}.
+#' @param ... Additional arguments for the creation of H3 spaces.
 #' @returns no return object. This function saves the space input files for gen3sis at the output_directory
 #'
 #' @importFrom gen3sis2 create_spaces check_spaces
@@ -112,7 +113,8 @@ create_spaces_h3 <- function(
                                           n_sites=NA,
                                           unit="km2"),
                                 geodynamic=geodynamic,
-                                cost_function = list(cost_function)
+                                cost_function = list(cost_function),
+                                ...
   )
 
   # filling spaces
