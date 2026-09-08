@@ -45,6 +45,8 @@ If FALSE (default), only local distances are calculated (slower CPU time when si
 
 \item{geodynamic}{True or False, if the space is dynamic (e.g. sea-level change) or static. Default is NULL,
 i.e. deciding final value based on the input data using \code{?is_geodynamic}.}
+
+\item{...}{Additional arguments for the creation of H3 spaces.}
 }
 \value{
 no return object. This function saves the space input files for gen3sis at the output_directory
