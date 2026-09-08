@@ -1,8 +1,9 @@
 .Rproj.user
+*.Rproj
 .Rhistory
 .RData
 .Ruserdata
 .Renviron
-inst/extdata
+.DS_Store
 /doc/
 /Meta/
