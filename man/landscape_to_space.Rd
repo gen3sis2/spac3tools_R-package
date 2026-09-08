@@ -9,7 +9,7 @@ landscape_to_space(
   dir_output = dir_input,
   duration = list(from = NA, to = NA, by = NA, unit = "Ma"),
   crs = "+proj=longlat +datum=WGS84 +no_defs",
-  cost_function = list(xx = gcf$XXHarderNA_dist_Km),
+  cost_function = list(NA),
   ...
 )
 }
@@ -22,7 +22,7 @@ landscape_to_space(
 
 \item{crs}{see \code{?gen3sis2::create_spaces}}
 
-\item{cost_function}{Cost function for connectivity: see \code{?create_spaces}. Defaults to a cost of 2 for sites with missing data (NA).}
+\item{cost_function}{list of cost_function(s) used to calculate the cost distances between sites. Depends on type and other methods used to calculate the cost distances.}
 
 \item{...}{see \code{?gen3sis2::create_spaces}}
 }

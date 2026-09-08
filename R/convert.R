@@ -61,7 +61,7 @@
 #' @param dir_output location to store the converted space.rds
 #' @param duration see \code{?gen3sis2::create_spaces}
 #' @param crs see \code{?gen3sis2::create_spaces}
-#' @param cost_function Cost function for connectivity: see \code{?create_spaces}. Defaults to a cost of 2 for sites with missing data (NA).
+#' @param cost_function list of cost_function(s) used to calculate the cost distances between sites. Depends on type and other methods used to calculate the cost distances.
 #' @param ... see \code{?gen3sis2::create_spaces}
 #'
 #' @importFrom gen3sis2 create_spaces check_spaces
@@ -75,7 +75,17 @@ landscape_to_space <- function(dir_input=NA,
                                dir_output=dir_input,
                                duration=list(from=NA, to=NA, by=NA, unit="Ma"),
                                crs="+proj=longlat +datum=WGS84 +no_defs",
-                               cost_function=list(xx=gcf$XXHarderNA_dist_Km),...){
+                               cost_function=list(NA),...){
+
+  # check if the cost-function is supplied as list or as a function
+  if(inherits(cost_function, "list")){
+    all_func <- all(sapply(cost_function, function(x) inherits(x, "function")))
+    if(!all_func) stop("Not all elements of the list of cost functions are functions !")
+  }else if(inherits(cost_function, "function")){
+    cost_function <- list(cost_function)
+  }else{
+    stop("The element supplied as cost_function is not a function!")
+  }
 
   gen3sis2:::prepare_dirs(dir_input, dir_output)
   landscape_file_loc <- file.path(dir_input,"landscapes.rds")
@@ -109,7 +119,7 @@ landscape_to_space <- function(dir_input=NA,
                                total_area=total_area,
                                n_sites=n_sites,
                                unit="km2"),
-                     cost_function = list(cost_function),
+                     cost_function = cost_function,
                      geodynamic=NULL,
                      type_spec=list("res"=terra::res(ex_r)),
                      ...

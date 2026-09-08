@@ -1,8 +1,9 @@
 \dontrun{
   ## This is a temperature (Chelsa v2 bio1) raster for South America
   ## Each layer must be one timestep, and they must be ordered
-  temperature_raster <- terra::rast(system.file("extdata/rasters/temperature.tiff",package = "spac3tools"))
-
+  temperature_raster <- terra::rast(system.file(
+    "extdata/rasters/temperature_rasters_1dg.tif", package = "spac3tools")
+  )
   # Names are important, as they denote which variable the raster represents
   raster_list <- list(
     temperature = temperature_raster

@@ -12,27 +12,25 @@ decompress_space(
 )
 }
 \arguments{
-\item{dir_input}{the input directory containing the gen3sis2 space.rds}
+\item{dir_input}{The input directory containing the gen3sis2 spaces.rds}
 
-\item{cost_function_index}{the index of the cost function to be used and as provided
+\item{cost_function_index}{The index of the cost function to be used and as provided
 at spaces.rds at meta$cost_function. Default is the first cost function.
 Default is the declared cost_functions list at cost_lists
 Note that different const_functions can be used and it's computation
-depends only on gen3sis::create_input_landscape function}
+depends only on gen3sis::create_spaces_raster function}
 
-\item{dir_output}{output directory to save output. Default: dir_output=NULL
-is to creates a temporary directory and print it.}
+\item{dir_output}{Output directory.}
 
-\item{remove_temp_rasters}{boolean. If FALSE, delete temporary folder and files,
-i.e. temporary raster brinks inside directory temp_rasters}
+\item{remove_temp_rasters}{Boolean. If TRUE, delete temporary environment tif folder and files.}
 }
 \value{
 passing confirmation statement
 }
 \description{
 This function takes a `spaces.rds` file (compressed gen3sis2 format), reconstructs the
-full costs distances, ready for simulation and saves it to the specified output directory.
-Useful for taking compressed environmental reconstructions and reproducing or reruning experiments
+simulation-ready full costs distances, and saves them to the specified output directory.
+This functions primary use is undoing the compact storage of distances in the `spaces.rds` object.
 }
 \examples{
 \dontrun{
@@ -40,7 +38,8 @@ library(spac3tools)
 
 # The function reconstruct the distance matrices and rasters from the compressed spaces.rds
 decompress_space(
-  dir_input="your/compressed_spaces/directory", # just the directory, not the path to compressed spaces.rds
+  # just the directory, not the path to compressed spaces.rds
+  dir_input="your/compressed_spaces/directory",
   dir_output="your/decompressed_spaces/directory",
   cost_function_index=1, # which cost function to use
   remove_temp_rasters=FALSE # remove the reconstructed raster or not

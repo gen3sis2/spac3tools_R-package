@@ -45,6 +45,8 @@ If FALSE (default), only local distances are calculated (slower CPU time when si
 
 \item{geodynamic}{True or False, if the space is dynamic (e.g. sea-level change) or static. Default is NULL,
 i.e. deciding final value based on the input data using \code{?is_geodynamic}.}
+
+\item{...}{Additional arguments for the creation of H3 spaces.}
 }
 \value{
 no return object. This function saves the space input files for gen3sis at the output_directory
@@ -56,8 +58,9 @@ create an spaces input from a named list of H3 datasets and user defined cost fu
 \dontrun{
   ## This is a temperature (Chelsa v2 bio1) raster for South America
   ## Each layer must be one timestep, and they must be ordered
-  temperature_raster <- terra::rast(system.file("extdata/rasters/temperature.tiff",package = "spac3tools"))
-
+  temperature_raster <- terra::rast(system.file(
+    "extdata/rasters/temperature_rasters_1dg.tif", package = "spac3tools")
+  )
   # Names are important, as they denote which variable the raster represents
   raster_list <- list(
     temperature = temperature_raster

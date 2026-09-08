@@ -21,6 +21,7 @@
 #' @param duration list with from, to, by and unit. Default is from -latest time to zero by 1 Ma
 #' @param geodynamic True or False, if the space is dynamic (e.g. sea-level change) or static. Default is NULL,
 #' i.e. deciding final value based on the input data using \code{?is_geodynamic}.
+#' @param ... Additional arguments for the creation of H3 spaces.
 #' @returns no return object. This function saves the space input files for gen3sis at the output_directory
 #'
 #' @importFrom gen3sis2 create_spaces check_spaces
@@ -305,6 +306,7 @@ data_raster_to_h3 <- function(
 #' @importFrom h3jsr get_disk
 #' @importFrom igraph graph_from_edgelist V ecount as_edgelist E as_adjacency_matrix
 #' @importFrom Matrix sparseMatrix drop0
+#' @importFrom methods as new
 #'
 #' @noRd
 get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){

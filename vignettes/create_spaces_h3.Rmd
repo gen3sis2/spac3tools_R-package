@@ -3,7 +3,7 @@ title: "Creating a spaces.rds with H3 data"
 date: "`r format(Sys.time(),  '%d.%m.%Y')`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Converting gen3sis2 raster spaces to h3 and points}
+  %\VignetteIndexEntry{Creating a spaces.rds with H3 data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -35,7 +35,7 @@ All of the other columns in each `data.frame` must represent the value of the re
 
 ```{r}
 data("h3_list")
-head(h3_list)
+head(h3_list$temperature)
 ```
 
 ## 1.2 Using rasters
@@ -69,9 +69,11 @@ library(terra)
 
 ## This is a temperature (Chelsa v2 bio1) raster for South America
 ## Each layer must be one timestep, and they must be ordered 
-temperature_raster <- terra::rast(system.file("extdata/rasters/temperature.tiff",package = "spac3tools")) 
+temperature_raster <- terra::rast(system.file(
+  "extdata/rasters/temperature_rasters_1dg.tif", package = "spac3tools")
+  )
 
-plot(temperature_raster)
+plot(temperature_raster[[62:66]])
 ```
 
 Now, we can organize it in a `raster_list`:
@@ -79,7 +81,7 @@ Now, we can organize it in a `raster_list`:
 ```{r}
 # Names are important, as they denote which variable the raster represents
 raster_list <- list(
-  temperature = temperature_raster
+  temperature = temperature_raster[[62:66]]
 )
 raster_list
 ```
@@ -101,15 +103,15 @@ south_america_cells <- c(
 
 h3_list <- data_raster_to_h3(h3_address = south_america_cells, raster_list = raster_list)
 
-h3_list
+head(h3_list$temperature)
 ```
 
 It is also possible to provide just an H3 resolution. In this case, the function will try to extract data for all global cells, but will use only the ones within rasters' extent:
 
 ```{r}
-h3_list_res <- data_raster_to_h3(res = 1, raster_list = raster_list)
+h3_list_res <- data_raster_to_h3(res = 2, raster_list = raster_list)
 
-h3_list_res
+head(h3_list_res$temperature)
 ```
 
 # 2. Creating the spaces.rds
@@ -118,7 +120,7 @@ With data properly organized, create an `h3` type spaces follows the same proces
 
 ```{r}
 create_spaces_h3(
-    h3_list = h3_list,
+    h3_list = h3_list_res,
     cost_function = function(source, dest){
       return(1/1000)
     },
