@@ -305,6 +305,7 @@ data_raster_to_h3 <- function(
 #' @importFrom h3jsr get_disk
 #' @importFrom igraph graph_from_edgelist V ecount as_edgelist E as_adjacency_matrix
 #' @importFrom Matrix sparseMatrix drop0
+#' @importFrom methods as new
 #'
 #' @noRd
 get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){

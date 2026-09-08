@@ -25,6 +25,7 @@
 #' @param remove_temp_rasters Boolean. If TRUE, delete temporary environment tif folder and files.
 #'
 #' @return passing confirmation statement
+#' @importFrom stats setNames
 #' @export
 #'
 #' @example inst/examples/decompress_space_help.R
