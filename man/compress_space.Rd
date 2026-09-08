@@ -3,11 +3,13 @@
 \name{compress_space}
 \alias{compress_space}
 \title{Compress a gen3sis2 Space object by removing cost distances}
+\usage{
+compress_space(dir_input = NULL, dir_output = NULL)
+}
 \arguments{
 \item{dir_input}{Directory containing the `spaces.rds` to compress.}
 
-\item{dir_output}{Directory where the compressed version will be saved.
-If `NULL`, a temporary directory is used.}
+\item{dir_output}{Directory where the compressed version will be saved.}
 }
 \value{
 Saves a compressed `spaces.rds` file to `dir_output`. Does not return an R object.
