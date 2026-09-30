@@ -10,32 +10,32 @@
 gcf <- list()
 
 # Available Cost Functions:
-gcf$only_dist_m <- function(source, dest){
+gcf$only_dist_m <- function(source, dest) {
   return(1)
 }
-gcf$only_dist_Km <- function(source, dest){
-  return(1/1000)
+gcf$only_dist_Km <- function(source, dest) {
+  return(1 / 1000)
 }
-gcf$XXHarderNA_dist_m <- function(source, dest){
+gcf$XXHarderNA_dist_m <- function(source, dest) {
   if (!all(source$habitable, dest$habitable)) {
     return(2)
   } else {
     return(1)
   }
 }
-gcf$XXHarderNA_dist_Km <- function(source, dest){
+gcf$XXHarderNA_dist_Km <- function(source, dest) {
   if (!all(source$habitable, dest$habitable)) {
-    return(2/1000)
+    return(2 / 1000)
   } else {
-    return(1/1000)
+    return(1 / 1000)
   }
 }
 
-gcf$X10NA_dist_Km <- function(source, dest){
+gcf$X10NA_dist_Km <- function(source, dest) {
   if (!all(source$habitable, dest$habitable)) {
-    return(10/1000)
+    return(10 / 1000)
   } else {
-    return(1/1000)
+    return(1 / 1000)
   }
 }
 
@@ -47,7 +47,6 @@ gcf$X10NA_dist_Km <- function(source, dest){
 #     return((max(source["physdiv"], dest["physdiv"])+1/1000))
 #   }
 # }
-
 
 ## Example from AS on equal area projection. Attention: This seams to no work with the
 ## spherical corrections of the borders.
@@ -71,9 +70,9 @@ gcf$north_asymmetry_m <- function(source, dest) {
 
 gcf$north_asymmetry_km <- function(source, dest) {
   if (source$coordinates["y"] < dest$coordinates["y"]) {
-    return(2/1000)
+    return(2 / 1000)
   } else {
-    return(1/1000)
+    return(1 / 1000)
   }
 }
 
@@ -88,9 +87,9 @@ gcf$north_asymmetry_m <- function(source, dest) {
 
 gcf$north_asymmetry_km <- function(source, dest) {
   if (source$coordinates["y"] > dest$coordinates["y"]) {
-    return(2/1000)
+    return(2 / 1000)
   } else {
-    return(1/1000)
+    return(1 / 1000)
   }
 }
 
@@ -105,9 +104,9 @@ gcf$north_asymmetry_m <- function(source, dest) {
 
 gcf$north_asymmetry_km <- function(source, dest) {
   if (source$coordinates["x"] > dest$coordinates["x"]) {
-    return(2/1000)
+    return(2 / 1000)
   } else {
-    return(1/1000)
+    return(1 / 1000)
   }
 }
 
@@ -122,11 +121,8 @@ gcf$north_asymmetry_m <- function(source, dest) {
 
 gcf$north_asymmetry_km <- function(source, dest) {
   if (source$coordinates["x"] < dest$coordinates["x"]) {
-    return(2/1000)
+    return(2 / 1000)
   } else {
-    return(1/1000)
+    return(1 / 1000)
   }
 }
-
-
-

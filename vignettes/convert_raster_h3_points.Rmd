@@ -13,10 +13,10 @@ library(knitr)
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>", 
-  tidy=T,
-  fig.align='center',
-  tidy.opts = list(width.cutoff=80),
-  results='hold'
+  tidy = TRUE,
+  fig.align = 'center',
+  tidy.opts = list(width.cutoff = 80),
+  results = 'hold'
 )
 ```
 
@@ -58,18 +58,18 @@ gen3sis2::create_spaces_raster(
   raster_list = raster_list,
   cost_function = function(source, dest) {
     if(!all(source$habitable, dest$habitable)) {
-      return(2/1000)
+      return(2 / 1000)
     } else {
-      return(1/1000)
+      return(1 / 1000)
     }
   },
   directions = 8,
   output_directory = spaces_output,
-  full_dists = T,
-  overwrite_output = T,
-  verbose = F,
+  full_dists = TRUE,
+  overwrite_output = TRUE,
+  verbose = FALSE,
   duration = list(from = 65, to = 0, by = -1, unit = "Ma"),
-  geodynamic = T
+  geodynamic = TRUE
 )
 ```
 
@@ -123,10 +123,10 @@ h3_spaces_output <- "~/your_path/SouthAmerica/h3"
 
 space_raster_to_h3(dir_input = spaces_output,
                    dir_output = h3_spaces_output,
-                   res=3,
-                   verbose=0,
-                   compute_distances=TRUE,
-                   reports=TRUE)
+                   res = 3,
+                   verbose = 0,
+                   compute_distances = TRUE,
+                   reports = TRUE)
 ```
 
 ## Convert h3 spaces to points

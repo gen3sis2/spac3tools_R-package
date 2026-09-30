@@ -35,14 +35,6 @@ converts it to a `spaces.rds` object compatible with gen3sis2, and saves the res
 It ensures that time steps are properly ordered and that spatial metadata is derived automatically.
 }
 \examples{
-# deprecated
-# dir_l <- "C:/temp/decompressed_spaces/globe_0-20Ma_1Myr/"
-#
-# landscape_to_space(dir_l,
-#                    duration=list(from=-20, to=0,  by=1, unit="Ma"),
-#                    crs="+proj=longlat +datum=WGS84 +no_defs",
-#                    cost_function=list(xx=gcf$XXHarderNA_dist_Km)
-#                    )
 \donttest{
 library(spac3tools)
 
@@ -58,7 +50,7 @@ ncol(old_landcape$temp)
 
 # Convert the old landscapes.rds to the new spaces.rds
 # Need to provide a cost function and duration (timesteps)
-spaces_path <- file.path(tempdir(),"space")
+spaces_path <- file.path(tempdir(), "space")
 dir.create(spaces_path)
 
 landscape_to_space(
@@ -66,10 +58,10 @@ landscape_to_space(
   dir_output = spaces_path,
   duration = list(from = 65, to = 0, by = -1, unit = "Ma"),
   cost_function = function(source, dest) {
-    if(!all(source$habitable, dest$habitable)) {
-      return(2/1000)
+    if (!all(source$habitable, dest$habitable)) {
+      return(2 / 1000)
     } else {
-      return(1/1000)
+      return(1 / 1000)
     }
   }
 )

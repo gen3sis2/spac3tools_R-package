@@ -1,5 +1,5 @@
-library(spac3tools)
 \donttest{
+library(spac3tools)
 # First load some raster spaces.rds input
 dir_input <- system.file("extdata/TestSpaces/geodynamic_spaces/raster", package = "gen3sis2")
 dir_output <- file.path(tempdir(), "h3")
