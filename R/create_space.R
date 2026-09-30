@@ -129,8 +129,8 @@ create_spaces_h3 <- function(
   )
 
   # filling spaces
-  total_area <- h3jsr::cell_area(h3_cells, unit = "km2", simple = T) |>
-    sum(na.rm = T)
+  total_area <- h3jsr::cell_area(h3_cells, unit = "km2", simple = TRUE) |>
+    sum(na.rm = TRUE)
   n_sites <- length(h3_cells)
   gs$meta$area$total_area <- total_area
   gs$meta$area$n_sites <- n_sites
@@ -266,7 +266,7 @@ data_raster_to_h3 <- function(
 
   r_ext <- terra::ext(raster_list[[1]][[1]])
 
-  points_sf <- h3jsr::cell_to_point(h3_address, simple = F)
+  points_sf <- h3jsr::cell_to_point(h3_address, simple = FALSE)
   pts_before <- nrow(points_sf)
 
   coords <- sf::st_coordinates(points_sf)

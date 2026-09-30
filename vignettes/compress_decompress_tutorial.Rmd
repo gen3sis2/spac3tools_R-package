@@ -13,10 +13,10 @@ library(knitr)
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>", 
-  tidy=T,
-  fig.align='center',
+  tidy = TRUE,
+  fig.align = 'center',
   tidy.opts = list(width.cutoff=80),
-  results='hold'
+  results = 'hold'
 )
 ```
 
@@ -68,11 +68,11 @@ gen3sis2::create_spaces_raster(
   },
   directions = 8,
   output_directory = "~/your_path/SouthAmerica/new_spaces",
-  full_dists = T,
-  overwrite_output = T,
-  verbose = F,
+  full_dists = TRUE,
+  overwrite_output = TRUE,
+  verbose = FALSE,
   duration = list(from = 65, to = 0, by = -1, unit = "Ma"),
-  geodynamic = T
+  geodynamic = TRUE
 )
 ```
 

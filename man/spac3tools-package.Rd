@@ -25,7 +25,7 @@ and reproducibility of the input data used in gen3sis and gen3sis2 simulations.
 library(gen3sis)
 
 # get path to example input inside package
-datapath <- system.file(file.path("extdata", "WorldCenter"), package = "gen3sis")
+datapath <- system.file("extdata", "WorldCenter", package = "gen3sis")
 path_config <- file.path(datapath, "config/config_worldcenter.R")
 path_landscape <- file.path(datapath, "landscape")
 

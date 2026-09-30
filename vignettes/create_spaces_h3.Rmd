@@ -28,7 +28,7 @@ Obtaining an H3 cells' centroids is easy using the `h3jsr` package, all is neede
 library(h3jsr)
 library(spac3tools)
 
-h3jsr::cell_to_point(c("8166fffffffffff", "81663ffffffffff"), simple = F)
+h3jsr::cell_to_point(c("8166fffffffffff", "81663ffffffffff"), simple = FALSE)
 ```
 
 All of the other columns in each `data.frame` must represent the value of the respective variable at a given timestep. Below is an example of how a `h3_list` should look like:

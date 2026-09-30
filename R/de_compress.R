@@ -112,10 +112,10 @@ decompress_space <- function(
     output_directory = file.path(dir_output, "decompressed"),
     duration = gsd,
     gsd$unit,
-    full_dists = T,
+    full_dists = TRUE,
     geodynamic = gen3sis_space$meta$geodynamic,
     crs = gen3sis_space$meta$crs,
-    verbose = T,
+    verbose = TRUE,
     overwrite_output = TRUE
   )
 
@@ -170,5 +170,5 @@ compress_space <- function(dir_input = NULL, dir_output = NULL) {
   if (is.null(gen3sis_space)) {
     stop("Please provide a loaded gen3sis2 spaces.rds as gen3sis_space")
   }
-  saveRDS(gen3sis_space, file.path(dir_output, "spaces.rds"), compress = T)
+  saveRDS(gen3sis_space, file.path(dir_output, "spaces.rds"))
 }

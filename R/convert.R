@@ -19,7 +19,7 @@
 #' library(gen3sis)
 #'
 #' # get path to example input inside package
-#' datapath <- system.file(file.path("extdata", "WorldCenter"), package = "gen3sis")
+#' datapath <- system.file("extdata", "WorldCenter", package = "gen3sis")
 #' path_config <- file.path(datapath, "config/config_worldcenter.R")
 #' path_landscape <- file.path(datapath, "landscape")
 #'
@@ -138,7 +138,7 @@ landscape_to_space <- function(
     ...
   )
   gen3sis2::check_spaces(gs)
-  saveRDS(gs, file.path(dir_output, "spaces.rds"), compress = T)
+  saveRDS(gs, file.path(dir_output, "spaces.rds"))
   print(paste0(
     'space.rds type=',
     gs$type,
@@ -365,7 +365,7 @@ space_raster_to_h3 <- function(
 
     merged_final_left <- base::Reduce(
       function(df1, df2) {
-        base::merge(df1, df2, by = c("h3_cell", "x", "y"), all.x = T)
+        base::merge(df1, df2, by = c("h3_cell", "x", "y"), all.x = TRUE)
       },
       agg_df
     )
@@ -616,7 +616,7 @@ space_h3_to_points <- function(dir_input, dir_output = NULL, inplace = TRUE) {
     space$meta$type <- "points"
     saveRDS(space, file.path(dir_input, "spaces.rds"))
   } else if (!inplace & !is.null(dir_output)) {
-    input_files <- list.files(dir_input, recursive = T, full.names = F)
+    input_files <- list.files(dir_input, recursive = TRUE, full.names = FALSE)
 
     for (f in input_files) {
       dir_target <- file.path(dir_output, dirname(f))
