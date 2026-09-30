@@ -30,68 +30,81 @@
 #' @export
 #' @example inst/examples/create_spaces_h3_help.R
 create_spaces_h3 <- function(
-    h3_list,
-    cost_function,
-    output_directory,
-    # timesteps = NULL,
-    full_dists = FALSE,
-    overwrite_output = FALSE,
-    verbose = FALSE,
-    duration=list(from=NA, to=NA, by=NA, unit="Ma"),
-    geodynamic=NULL,
-    ...
-    ) {
+  h3_list,
+  cost_function,
+  output_directory,
+  # timesteps = NULL,
+  full_dists = FALSE,
+  overwrite_output = FALSE,
+  verbose = FALSE,
+  duration = list(from = NA, to = NA, by = NA, unit = "Ma"),
+  geodynamic = NULL,
+  ...
+) {
   # habitability masks removed for now.. assumin NA's from input data as non-habitable (applies if only one env. variable has NA in the cell)!
-  habitability_masks = NULL
+  habitability_masks <- NULL
 
   # prepare directories
   gen3sis2:::create_directories(output_directory, overwrite_output, full_dists)
 
   # compute time-steps
-  if(!is.list(duration) || any(!c("from", "to", "by", "unit") %in% names(duration))){
+  if (
+    !is.list(duration) ||
+      any(!c("from", "to", "by", "unit") %in% names(duration))
+  ) {
     stop("Duration is ideally informed as a list with from, to, by and unit.")
   }
 
-  if(any(is.na(duration))) {
+  if (any(is.na(duration))) {
     required_elements <- names(which(is.na(duration)))
 
-    if(length(required_elements) > 1){
+    if (length(required_elements) > 1) {
       stop("Too many NA in duration. Review necessary.")
     }
 
-    fill <-  switch (required_elements,
-                     "from" = duration$to-((ncol(h3_list[[1]])-4)*duration$by),
-                     "to" = duration$from+((ncol(h3_list[[1]])-4)*duration$by),
-                     "by" = 1,
-                     "unit" = "Ma"
+    fill <- switch(
+      required_elements,
+      "from" = duration$to - ((ncol(h3_list[[1]]) - 4) * duration$by),
+      "to" = duration$from + ((ncol(h3_list[[1]]) - 4) * duration$by),
+      "by" = 1,
+      "unit" = "Ma"
     )
 
     duration[[required_elements]] <- fill
   }
 
-  timesteps <- paste0(seq(duration$from, duration$to, by = duration$by), duration$unit)
+  timesteps <- paste0(
+    seq(duration$from, duration$to, by = duration$by),
+    duration$unit
+  )
 
   # check h3 addresses consistency
-  h3_cells <- sapply(names(h3_list), function(v){h3_list[[v]][["h3_address"]]})
+  h3_cells <- sapply(names(h3_list), function(v) {
+    h3_list[[v]][["h3_address"]]
+  })
 
-  if(all(apply(h3_cells,1,function(cell){length(unique(cell)) == 1}))) {
-    h3_cells <- h3_cells[,1]
+  if (
+    all(apply(h3_cells, 1, function(cell) {
+      length(unique(cell)) == 1
+    }))
+  ) {
+    h3_cells <- h3_cells[, 1]
   } else {
     stop("Inconsistencies found in H3 addresses between variables.")
   }
 
   # prepare and save spaces
-  compiled_env <- lapply(h3_list, function(v){
-    v <- v[,-which(colnames(v) == "h3_address")]
-    v <- v[,c("x","y",setdiff(colnames(v),c("x","y")))]
-    colnames(v) <- c("x","y",timesteps)
+  compiled_env <- lapply(h3_list, function(v) {
+    v <- v[, -which(colnames(v) == "h3_address")]
+    v <- v[, c("x", "y", setdiff(colnames(v), c("x", "y")))]
+    colnames(v) <- c("x", "y", timesteps)
     v
   })
 
   ts_habitabilty <- list()
   for (ts in timesteps) {
-    hab_location <- sapply(compiled_env, function(v){
-      !is.na(v[,ts])
+    hab_location <- sapply(compiled_env, function(v) {
+      !is.na(v[, ts])
     })
 
     hab_mask <- apply(hab_location, 1, all)
@@ -100,42 +113,46 @@ create_spaces_h3 <- function(
     ts_habitabilty <- append(ts_habitabilty, l)
 
     for (v in 1:length(compiled_env)) {
-      compiled_env[[v]][!hab_mask,ts] <- NA
+      compiled_env[[v]][!hab_mask, ts] <- NA
     }
   }
   names(compiled_env) <- names(h3_list)
 
-  gs <- gen3sis2::create_spaces(env=compiled_env,
-                                type="h3",
-                                duration=duration,
-                                area=list(extent=NA,
-                                          total_area=NA,
-                                          n_sites=NA,
-                                          unit="km2"),
-                                geodynamic=geodynamic,
-                                cost_function = list(cost_function),
-                                ...
+  gs <- gen3sis2::create_spaces(
+    env = compiled_env,
+    type = "h3",
+    duration = duration,
+    area = list(extent = NA, total_area = NA, n_sites = NA, unit = "km2"),
+    geodynamic = geodynamic,
+    cost_function = list(cost_function),
+    ...
   )
 
   # filling spaces
-  total_area <- h3jsr::cell_area(h3_cells, unit = "km2", simple = T) |> sum(na.rm = T)
+  total_area <- h3jsr::cell_area(h3_cells, unit = "km2", simple = T) |>
+    sum(na.rm = T)
   n_sites <- length(h3_cells)
   gs$meta$area$total_area <- total_area
   gs$meta$area$n_sites <- n_sites
-  gs$meta$area$extent <- c("xmin" = min(compiled_env[[1]][["x"]]),
-                           "xmax" = max(compiled_env[[1]][["x"]]),
-                           "ymin" = min(compiled_env[[1]][["y"]]),
-                           "ymax" = max(compiled_env[[1]][["y"]]))
+  gs$meta$area$extent <- c(
+    "xmin" = min(compiled_env[[1]][["x"]]),
+    "xmax" = max(compiled_env[[1]][["x"]]),
+    "ymin" = min(compiled_env[[1]][["y"]]),
+    "ymax" = max(compiled_env[[1]][["y"]])
+  )
   gs$meta$type_spec <- list(res = h3jsr::get_res(h3_cells[[1]]))
 
   gen3sis2::check_spaces(gs)
 
   # in case geodynamic is set to FALSE, double check env matrix
-  if (!geodynamic){
+  if (!geodynamic) {
     # if compiled_env is dynamic, reset it
-    if (gen3sis2:::is_geodynamic(compiled_env)){ # get the geodynamic status
-      warning("geodynamic is set to FALSE but environment says otherwise.
-          changing geodynamic to TRUE")
+    if (gen3sis2:::is_geodynamic(compiled_env)) {
+      # get the geodynamic status
+      warning(
+        "geodynamic is set to FALSE but environment says otherwise.
+          changing geodynamic to TRUE"
+      )
       geodynamic <- TRUE
       gs$meta$geodynamic <- TRUE
     }
@@ -148,29 +165,42 @@ create_spaces_h3 <- function(
   # iterate over times-teps
 
   # number of time-steps
-  if (geodynamic){
+  if (geodynamic) {
     nts <- length(timesteps)
   } else {
     nts <- 1 # to only compute the first
   }
 
-  coords <- h3_list[[1]][,c("x","y")]
-  for( step in 1:nts ) {
+  coords <- h3_list[[1]][, c("x", "y")]
+  for (step in 1:nts) {
     if (verbose) {
       cat(paste("starting distance calculations for timestep", step, '\n'))
     }
 
-    var_step <- do.call(cbind, lapply(compiled_env, function(v){v[[timesteps[step]]]}))
-    var_step <- cbind(coords,var_step)
+    var_step <- do.call(
+      cbind,
+      lapply(compiled_env, function(v) {
+        v[[timesteps[step]]]
+      })
+    )
+    var_step <- cbind(coords, var_step)
 
     habitable_mask <- ts_habitabilty[[timesteps[step]]]
 
-    distance_local <- get_h3_distances(var_step, h3_cells, habitable_mask, cost_function)
+    distance_local <- get_h3_distances(
+      var_step,
+      h3_cells,
+      habitable_mask,
+      cost_function
+    )
 
-    file_name <- paste0("distances_local_", as.character(nts-step), ".rds")
-    saveRDS(distance_local, file = file.path(output_directory, "distances_local", file_name))
+    file_name <- paste0("distances_local_", as.character(nts - step), ".rds")
+    saveRDS(
+      distance_local,
+      file = file.path(output_directory, "distances_local", file_name)
+    )
 
-    if(full_dists){
+    if (full_dists) {
       # transpose to preserve src/dest relation for efficent local traversal in get_distance_matrices function
       distance_local <- t(distance_local)
 
@@ -185,8 +215,11 @@ create_spaces_h3 <- function(
         Inf
       )
 
-      file_name <- paste0("distances_full_", as.character(nts-step), ".rds")
-      saveRDS(dist_matrix, file = file.path(output_directory, "distances_full", file_name))
+      file_name <- paste0("distances_full_", as.character(nts - step), ".rds")
+      saveRDS(
+        dist_matrix,
+        file = file.path(output_directory, "distances_full", file_name)
+      )
       rm(dist_matrix)
       gc()
     }
@@ -217,10 +250,11 @@ create_spaces_h3 <- function(
 #' @export
 #' @example inst/examples/create_spaces_h3_help.R
 data_raster_to_h3 <- function(
-    h3_address = NULL,
-    res = NULL,
-    raster_list){
-  if(!is.null(h3_address) && !is.null(res)){
+  h3_address = NULL,
+  res = NULL,
+  raster_list
+) {
+  if (!is.null(h3_address) && !is.null(res)) {
     warning("Ignoring parameter res")
   } else if (is.null(h3_address) && !is.null(res)) {
     h3_address <- h3jsr::get_res0() |>
@@ -238,23 +272,25 @@ data_raster_to_h3 <- function(
   coords <- sf::st_coordinates(points_sf)
 
   points_sf <- points_sf[
-    coords[,1] >= r_ext[1] & coords[,1] <= r_ext[2] &  # longitude
-      coords[,2] >= r_ext[3] & coords[,2] <= r_ext[4],   # latitude
+    coords[, 1] >= r_ext[1] &
+      coords[, 1] <= r_ext[2] & # longitude
+      coords[, 2] >= r_ext[3] &
+      coords[, 2] <= r_ext[4], # latitude
   ]
 
   pts_after <- nrow(points_sf)
 
-  if(pts_after < pts_before) {
-    warning(pts_before-pts_after," cells outside the raster extent deleted.")
+  if (pts_after < pts_before) {
+    warning(pts_before - pts_after, " cells outside the raster extent deleted.")
   }
 
-  df_list <- lapply(names(raster_list), function(v){
-    names(raster_list[[v]]) <- paste0("ts_",1:terra::nlyr(raster_list[[v]]))
+  df_list <- lapply(names(raster_list), function(v) {
+    names(raster_list[[v]]) <- paste0("ts_", 1:terra::nlyr(raster_list[[v]]))
     vals <- terra::extract(raster_list[[v]], terra::vect(points_sf))
 
-    val_points <- cbind(points_sf, vals[,-1])
+    val_points <- cbind(points_sf, vals[, -1])
     val_coords <- sf::st_coordinates(val_points)
-    colnames(val_coords) <- c("x","y")
+    colnames(val_coords) <- c("x", "y")
     val_df <- val_points |>
       sf::st_set_geometry(NULL) |>
       cbind(val_coords)
@@ -309,11 +345,16 @@ data_raster_to_h3 <- function(
 #' @importFrom methods as new
 #'
 #' @noRd
-get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
+get_h3_distances <- function(
+  var_step,
+  h3_cells,
+  habitable_mask,
+  cost_function
+) {
   coords <- as.matrix(var_step[, c("x", "y")])
 
   neighs <- h3jsr::get_disk(h3_cells, 1)
-  adj <- lapply(1:length(neighs), function(cell){
+  adj <- lapply(1:length(neighs), function(cell) {
     neighborhood <- neighs[[cell]][neighs[[cell]] != h3_cells[cell]]
     neighborhood <- which(h3_cells %in% neighborhood)
 
@@ -328,20 +369,21 @@ get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
   edges_values <- numeric(igraph::ecount(h3_graph))
 
   edge_list_matrix <- igraph::as_edgelist(h3_graph, names = TRUE)
-  edges_values <- edge_list_matrix[,2]
+  edges_values <- edge_list_matrix[, 2]
   igraph::E(h3_graph)$weight <- edges_values
 
   transition_matrix <- igraph::as_adjacency_matrix(
     graph = h3_graph,
     attr = "weight",
     sparse = TRUE
-  ) |> t()
+  ) |>
+    t()
 
   #
-  from_mtx <- var_step[adj[,1],c("x","y")] |> as.matrix()
+  from_mtx <- var_step[adj[, 1], c("x", "y")] |> as.matrix()
   rownames(from_mtx) <- NULL
 
-  to_mtx <- var_step[adj[,2],c("x","y")] |> as.matrix()
+  to_mtx <- var_step[adj[, 2], c("x", "y")] |> as.matrix()
   rownames(to_mtx) <- NULL
 
   correction <- cbind(from_mtx, to_mtx)
@@ -355,12 +397,18 @@ get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
   correctionValues <- 1 / (distances / scaleValue)
   #
 
-  i <- as.integer(adj[,2] - 1)
-  j <- as.integer(adj[,1] - 1)
+  i <- as.integer(adj[, 2] - 1)
+  j <- as.integer(adj[, 1] - 1)
   xv <- as.vector(correctionValues) #check for Inf values!
   dims <- length(h3_cells)
-  correctionMatrix <- new("dgTMatrix", i = i, j = j, x = xv, Dim = as.integer(c(dims,dims)))
-  correctionMatrix <- (as(correctionMatrix,"sparseMatrix"))
+  correctionMatrix <- new(
+    "dgTMatrix",
+    i = i,
+    j = j,
+    x = xv,
+    Dim = as.integer(c(dims, dims))
+  )
+  correctionMatrix <- (as(correctionMatrix, "sparseMatrix"))
 
   correctionMatrix@x <- 1 / correctionMatrix@x
 
@@ -375,17 +423,17 @@ get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
   tmp_cost <- numeric(nrow(transition_cells))
 
   habitable_mask <- as.logical(as.vector(habitable_mask))
-  var_names <- names(var_step)[which(!names(var_step)%in%c("x","y"))]
-  space_stack <- as.matrix(var_step[,var_names])
-  for(k in 1:nrow(transition_cells)){
+  var_names <- names(var_step)[which(!names(var_step) %in% c("x", "y"))]
+  space_stack <- as.matrix(var_step[, var_names])
+  for (k in 1:nrow(transition_cells)) {
     ind_i <- transition_cells[k, "i"] # destination
     ind_j <- transition_cells[k, "j"] # origin
 
-    coords_i <- coords[ind_i,] # destination coordinates
-    coords_j <- coords[ind_j,] # origin coordinates
+    coords_i <- coords[ind_i, ] # destination coordinates
+    coords_j <- coords[ind_j, ] # origin coordinates
 
-    cell_i <- space_stack[ind_i,] # destination values
-    cell_j <- space_stack[ind_j,] # origin values
+    cell_i <- space_stack[ind_i, ] # destination values
+    cell_j <- space_stack[ind_j, ] # origin values
 
     habitable_i <- habitable_mask[ind_i] # is the destination habitable?
     habitable_j <- habitable_mask[ind_j] # is the origin habitable?
@@ -411,7 +459,7 @@ get_h3_distances <- function(var_step, h3_cells, habitable_mask, cost_function){
 
     cost <- cost_function(source_cell, destination_cell)
 
-    if(cost == Inf){
+    if (cost == Inf) {
       cost <- 0
     }
     tmp_cost[k] <- cost
