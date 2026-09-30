@@ -371,7 +371,7 @@ space_raster_to_h3 <- function(
     )
 
     vari_coords <- vari_df[, c("x", "y")]
-    vari_coords$original_order <- 1:nrow(vari_coords)
+    vari_coords$original_order <- seq_len(nrow(vari_coords))
 
     vari_df <- merge(
       vari_coords,
@@ -521,7 +521,7 @@ space_raster_to_h3 <- function(
     sf::st_coordinates()
 
   error_m <- c()
-  for (i in 1:nrow(h3_centroids)) {
+  for (i in seq_len(nrow(h3_centroids))) {
     distance <- geosphere::distGeo(h3_centroids[i, ], all_pts[i, ])
     error_m[i] <- distance
   }

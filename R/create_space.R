@@ -50,12 +50,12 @@ create_spaces_h3 <- function(
   # compute time-steps
   if (
     !is.list(duration) ||
-      any(!c("from", "to", "by", "unit") %in% names(duration))
+      !all(c("from", "to", "by", "unit") %in% names(duration))
   ) {
     stop("Duration is ideally informed as a list with from, to, by and unit.")
   }
 
-  if (any(is.na(duration))) {
+  if (anyNA(duration)) {
     required_elements <- names(which(is.na(duration)))
 
     if (length(required_elements) > 1) {
@@ -112,7 +112,7 @@ create_spaces_h3 <- function(
     names(l) <- ts
     ts_habitabilty <- append(ts_habitabilty, l)
 
-    for (v in 1:length(compiled_env)) {
+    for (v in seq_along(compiled_env)) {
       compiled_env[[v]][!hab_mask, ts] <- NA
     }
   }
@@ -294,7 +294,7 @@ data_raster_to_h3 <- function(
     val_df <- val_points |>
       sf::st_set_geometry(NULL) |>
       cbind(val_coords)
-    rownames(val_df) <- 1:nrow(val_df)
+    rownames(val_df) <- seq_len(nrow(val_df))
 
     val_df
   })
@@ -354,7 +354,7 @@ get_h3_distances <- function(
   coords <- as.matrix(var_step[, c("x", "y")])
 
   neighs <- h3jsr::get_disk(h3_cells, 1)
-  adj <- lapply(1:length(neighs), function(cell) {
+  adj <- lapply(seq_along(neighs), function(cell) {
     neighborhood <- neighs[[cell]][neighs[[cell]] != h3_cells[cell]]
     neighborhood <- which(h3_cells %in% neighborhood)
 
@@ -365,7 +365,7 @@ get_h3_distances <- function(
   h3_graph <- igraph::graph_from_edgelist(as.matrix(adj), directed = TRUE)
 
   ##
-  igraph::V(h3_graph)$name <- 1:nrow(var_step)
+  igraph::V(h3_graph)$name <- seq_len(nrow(var_step))
   edges_values <- numeric(igraph::ecount(h3_graph))
 
   edge_list_matrix <- igraph::as_edgelist(h3_graph, names = TRUE)
@@ -425,7 +425,7 @@ get_h3_distances <- function(
   habitable_mask <- as.logical(as.vector(habitable_mask))
   var_names <- names(var_step)[which(!names(var_step) %in% c("x", "y"))]
   space_stack <- as.matrix(var_step[, var_names])
-  for (k in 1:nrow(transition_cells)) {
+  for (k in seq_len(nrow(transition_cells))) {
     ind_i <- transition_cells[k, "i"] # destination
     ind_j <- transition_cells[k, "j"] # origin
 

@@ -94,7 +94,7 @@ decompress_space <- function(
   lsn <- vector(mode = "list", length = length(ls))
   lsn <- setNames(lsn, names(ls))
   # attribute to list
-  for (i in 1:length(lsn)) {
+  for (i in seq_along(lsn)) {
     for (j in seq(terra::nlyr(b[[i]]))) {
       lsn[[i]] <- c(lsn[[i]], b[[i]][[j]])
     }
