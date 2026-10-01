@@ -59,12 +59,11 @@
 #'
 #' @param dir_input Location of landscape.rds to be converted
 #' @param dir_output location to store the converted space.rds
-#' @param duration see \code{?gen3sis2::create_spaces}
-#' @param crs see \code{?gen3sis2::create_spaces}
+#' @param duration see \code{?create_spaces}
+#' @param crs see \code{?create_spaces}
 #' @param cost_function list of cost_function(s) used to calculate the cost distances between sites. Depends on type and other methods used to calculate the cost distances.
-#' @param ... see \code{?gen3sis2::create_spaces}
+#' @param ... see \code{?create_spaces}
 #'
-#' @importFrom gen3sis2 create_spaces check_spaces
 #' @importFrom terra rast crs cellSize ext res
 #'
 #' @return Saves a `spaces.rds` file in the specified output directory.
@@ -112,7 +111,7 @@ landscape_to_space <- function(dir_input=NA,
   total_area <- sum(terra::cellSize(ex_r)[]) # area is fix to Km2
   # get number of rows
   n_sites <- dim(ex_r)[1]
-  gs <- gen3sis2::create_spaces(env=lc,
+  gs <- create_spaces(env=lc,
                      type="raster",
                      duration=duration,
                      area=list(extent=terra::ext(ex_r)[],
@@ -124,7 +123,7 @@ landscape_to_space <- function(dir_input=NA,
                      type_spec=list("res"=terra::res(ex_r)),
                      ...
                      )
-  gen3sis2::check_spaces(gs)
+  check_spaces(gs)
   saveRDS(gs, file.path(dir_output, "spaces.rds"), compress=T)
   print(paste0('space.rds type=', gs$type , ' saved to: "', file.path(dir_output, "spaces.rds"), '"'))
 }

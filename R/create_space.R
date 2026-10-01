@@ -24,7 +24,6 @@
 #' @param ... Additional arguments for the creation of H3 spaces.
 #' @returns no return object. This function saves the space input files for gen3sis at the output_directory
 #'
-#' @importFrom gen3sis2 create_spaces check_spaces
 #' @importFrom h3jsr cell_area get_res
 #'
 #' @export
@@ -105,7 +104,7 @@ create_spaces_h3 <- function(
   }
   names(compiled_env) <- names(h3_list)
 
-  gs <- gen3sis2::create_spaces(env=compiled_env,
+  gs <- create_spaces(env=compiled_env,
                                 type="h3",
                                 duration=duration,
                                 area=list(extent=NA,
@@ -128,12 +127,12 @@ create_spaces_h3 <- function(
                            "ymax" = max(compiled_env[[1]][["y"]]))
   gs$meta$type_spec <- list(res = h3jsr::get_res(h3_cells[[1]]))
 
-  gen3sis2::check_spaces(gs)
+  check_spaces(gs)
 
   # in case geodynamic is set to FALSE, double check env matrix
   if (!geodynamic){
     # if compiled_env is dynamic, reset it
-    if (gen3sis2:::is_geodynamic(compiled_env)){ # get the geodynamic status
+    if (is_geodynamic(compiled_env)){ # get the geodynamic status
       warning("geodynamic is set to FALSE but environment says otherwise.
           changing geodynamic to TRUE")
       geodynamic <- TRUE

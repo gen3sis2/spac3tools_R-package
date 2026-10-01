@@ -20,7 +20,7 @@
 #' at spaces.rds at meta$cost_function. Default is the first cost function.
 #' Default is the declared cost_functions list at cost_lists
 #' Note that different const_functions can be used and it's computation
-#' depends only on gen3sis::create_spaces_raster function
+#' depends only on create_spaces_raster function
 #' @param dir_output Output directory.
 #' @param remove_temp_rasters Boolean. If TRUE, delete temporary environment tif folder and files.
 #'
@@ -99,7 +99,7 @@ decompress_space <- function(dir_input=NULL,
   }
 
   gsd <- gen3sis_space$meta$duration
-  gen3sis2::create_spaces_raster(raster_list = lsn,
+  create_spaces_raster(raster_list = lsn,
                                  cost_function = ifelse(cost_function_index == 0, gen3sis_space$meta$cost_function, gen3sis_space$meta$cost_function[[cost_function_index]]),
                                  directions=8, output_directory = file.path(dir_output,"decompressed"),
                                  duration = gsd, gsd$unit, full_dists = T, geodynamic=gen3sis_space$meta$geodynamic,

@@ -86,7 +86,7 @@ mean_temp_df <- as.matrix(mean_temp_df)
 row.names(radiation_df) <- row.names(mean_temp_df) <- rows_naming
 
 # WIP ADMIR evr se compativel com spac3tools e ultima spaces format aceito
-template <- gen3sis2:::create_spaces()
+template <- create_spaces()
 
 # assemble a minimal spaces skeleton
 space <- list()

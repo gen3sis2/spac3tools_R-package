@@ -18,7 +18,7 @@ decompress_space(
 at spaces.rds at meta$cost_function. Default is the first cost function.
 Default is the declared cost_functions list at cost_lists
 Note that different const_functions can be used and it's computation
-depends only on gen3sis::create_spaces_raster function}
+depends only on create_spaces_raster function}
 
 \item{dir_output}{Output directory.}
 

@@ -51,10 +51,10 @@ raster_list <- list(
 Now we can use this to create the input space with *gen3sis2::create_spaces_raster*. We will use a simple cost function. 
 
 ```{r, eval=FALSE, echo=FALSE, warning=FALSE}
-library(gen3sis2)
+library(spac3tools)
 
 spaces_output <- "~/your_path/SouthAmerica/temp_spaces"
-gen3sis2::create_spaces_raster(
+create_spaces_raster(
   raster_list = raster_list,
   cost_function = function(source, dest) {
     if(!all(source$habitable, dest$habitable)) {

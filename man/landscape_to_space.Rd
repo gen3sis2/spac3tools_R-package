@@ -18,13 +18,13 @@ landscape_to_space(
 
 \item{dir_output}{location to store the converted space.rds}
 
-\item{duration}{see \code{?gen3sis2::create_spaces}}
+\item{duration}{see \code{?create_spaces}}
 
-\item{crs}{see \code{?gen3sis2::create_spaces}}
+\item{crs}{see \code{?create_spaces}}
 
 \item{cost_function}{list of cost_function(s) used to calculate the cost distances between sites. Depends on type and other methods used to calculate the cost distances.}
 
-\item{...}{see \code{?gen3sis2::create_spaces}}
+\item{...}{see \code{?create_spaces}}
 }
 \value{
 Saves a `spaces.rds` file in the specified output directory.
@@ -35,14 +35,6 @@ converts it to a `spaces.rds` object compatible with gen3sis2, and saves the res
 It ensures that time steps are properly ordered and that spatial metadata is derived automatically.
 }
 \examples{
-# deprecated
-# dir_l <- "C:/temp/decompressed_spaces/globe_0-20Ma_1Myr/"
-#
-# landscape_to_space(dir_l,
-#                    duration=list(from=-20, to=0,  by=1, unit="Ma"),
-#                    crs="+proj=longlat +datum=WGS84 +no_defs",
-#                    cost_function=list(xx=gcf$XXHarderNA_dist_Km)
-#                    )
 \donttest{
 library(spac3tools)
 

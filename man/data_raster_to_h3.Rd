@@ -30,6 +30,7 @@ Creates a list of H3 data.frame
 }
 \examples{
 \dontrun{
+  library(spac3tools)
   ## This is a temperature (Chelsa v2 bio1) raster for South America
   ## Each layer must be one timestep, and they must be ordered
   temperature_raster <- terra::rast(system.file(
