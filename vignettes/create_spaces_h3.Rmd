@@ -70,7 +70,7 @@ library(terra)
 ## This is a temperature (Chelsa v2 bio1) raster for South America
 ## Each layer must be one timestep, and they must be ordered 
 temperature_raster <- terra::rast(system.file(
-  "extdata/rasters/temperature_rasters_1dg.tif", package = "spac3tools")
+  file.path("extdata","rasters","temperature_rasters_1dg.tif"), package = "spac3tools")
   )
 
 plot(temperature_raster[[62:66]])
@@ -116,7 +116,7 @@ head(h3_list_res$temperature)
 
 # 2. Creating the spaces.rds
 
-With data properly organized, create an `h3` type spaces follows the same process as in `gen3sis2::create_spaces_raster`:
+With data properly organized, create an `h3` type spaces follows the same process as in `create_spaces_raster`:
 
 ```{r}
 create_spaces_h3(
