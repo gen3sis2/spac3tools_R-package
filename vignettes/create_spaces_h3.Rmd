@@ -116,7 +116,7 @@ head(h3_list_res$temperature)
 
 # 2. Creating the spaces.rds
 
-With data properly organized, create an `h3` type spaces follows the same process as in `gen3sis2::create_space_raster`:
+With data properly organized, create an `h3` type spaces follows the same process as in `gen3sis2::create_spaces_raster`:
 
 ```{r}
 create_spaces_h3(
